@@ -1,0 +1,22 @@
+---
+class_name: RunDirectorySensor
+entry_point: run_directory_sensor.py
+description: >
+  Sensor that emits triggers for seqencing run directories that are direct
+  children of a specific directory.
+poll_interval: 60
+enabled: false
+trigger_types:
+  - name: copy_complete
+    pack: gmc_norr
+    description: >
+      Triggers when CopyComplete.txt is found in a run directory
+    payload_schema:
+      type: object
+      properties:
+        run_directory:
+          type: string
+          description: The directory in which the copycomplete file was found
+        host:
+          type: string
+          description: The host on which the run directory was found
