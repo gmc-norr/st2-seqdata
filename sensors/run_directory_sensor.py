@@ -69,6 +69,8 @@ class RunDirectorySensor(PollingSensor):
         pass
 
     def poll(self):
+        existing_run_directories = set()
+
         for wd in self._watched_directories:
             self._logger.debug(f"checking watch directory: {wd['path']}")
 
@@ -78,8 +80,6 @@ class RunDirectorySensor(PollingSensor):
             _, stdout, stderr = client.exec_command(
                 f"find {wd['path']} -maxdepth 1 -mindepth 1 -type d"
             )
-
-            existing_run_directories = set()
 
             # Add new run directories or update state of existing run directories
             for line in stdout:
@@ -123,15 +123,15 @@ class RunDirectorySensor(PollingSensor):
                             payload=payload,
                         )
 
-            # Remove run directories that no longer exist
-            for k in set(self._run_directories.keys()) - existing_run_directories:
-                self._logger.debug(f"removing run directory: {self._run_directories[k]}")
-                self._run_directories.pop(k)
-
             for line in stderr:
                 self._logger.warning(f"stderr: {line}")
 
             client.close()
+
+        # Remove run directories that no longer exist
+        for k in set(self._run_directories.keys()) - existing_run_directories:
+            self._logger.debug(f"removing run directory: {self._run_directories[k]}")
+            self._run_directories.pop(k)
 
         self._update_datastore()
 
