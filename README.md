@@ -28,7 +28,7 @@ The pack needs to be able to read and write to the key-value store, more specifi
 Furthermore, the following keys must be defined in the key-value store:
 
 - `service_user`: username that the pack should act as when accessing data
-- `service_password`: password for the service user
+- `service_keyfile`: the path to the private ssh key that should be used for authentication
 
 ## Actions
 

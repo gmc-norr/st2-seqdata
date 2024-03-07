@@ -2,6 +2,7 @@ from io import StringIO
 import json
 import os
 from pathlib import Path
+import paramiko
 from paramiko.client import SSHClient, AutoAddPolicy
 import pwd
 from st2reactor.sensor.base import PollingSensor
@@ -71,7 +72,7 @@ class RunDirectorySensor(PollingSensor):
         for wd in self._watched_directories:
             self._logger.debug(f"checking watch directory: {wd['path']}")
 
-            host = wd.get("host", "localhost")
+            host = wd.get("host", "localhost") or "localhost"
             client = self._client(host)
 
             _, stdout, stderr = client.exec_command(
@@ -165,7 +166,7 @@ class RunDirectorySensor(PollingSensor):
 
     def _client(self, hostname: str):
         user = self.sensor_service.get_value("service_user", local=False)
-        pwd = self.sensor_service.get_value("service_password", local=False, decrypt=True)
+        keyfile = self.sensor_service.get_value("service_keyfile", local=False)
 
         self._logger.debug(f"connecting to {hostname} as {user}")
 
@@ -175,11 +176,15 @@ class RunDirectorySensor(PollingSensor):
             client = SSHClient()
             client.set_missing_host_key_policy(AutoAddPolicy)
 
-            client.connect(
-                hostname=hostname,
-                username=user,
-                password=pwd,
-            )
+            try:
+                client.connect(
+                    hostname=hostname,
+                    username=user,
+                    key_filename=keyfile,
+                )
+            except paramiko.ssh_exception.AuthenticationException as e:
+                self._logger.error(f"Authentication failed for {user}@{hostname}: {e}")
+                raise RuntimeError
 
         return client
 
