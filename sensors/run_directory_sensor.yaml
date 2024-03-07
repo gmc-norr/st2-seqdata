@@ -8,7 +8,7 @@ poll_interval: 60
 enabled: false
 trigger_types:
   - name: copy_complete
-    pack: gmc_norr
+    pack: gmc_norr_seqdata
     description: >
       Triggers when CopyComplete.txt is found in a run directory
     payload_schema:

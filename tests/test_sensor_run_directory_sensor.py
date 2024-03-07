@@ -28,7 +28,7 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
         self.assertTriggerDispatched(
-            trigger="gmc_norr.new_run_directory",
+            trigger="gmc_norr_seqdata.new_run_directory",
             payload={
                 "run_directory": str(run_directory),
                 "host": "localhost"
@@ -43,7 +43,7 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         self.sensor.poll()
 
         self.assertTriggerDispatched(
-            trigger="gmc_norr.copy_complete",
+            trigger="gmc_norr_seqdata.copy_complete",
             payload={
                 "run_directory": str(run_directory),
                 "host": "localhost"
@@ -95,11 +95,11 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 2)
         self.assertTriggerDispatched(
-            trigger="gmc_norr.new_run_directory",
+            trigger="gmc_norr_seqdata.new_run_directory",
             payload=payload,
         )
         self.assertTriggerDispatched(
-            trigger="gmc_norr.rta_complete",
+            trigger="gmc_norr_seqdata.rta_complete",
             payload=payload,
         )
         datastore_directories = json.loads(
@@ -128,10 +128,10 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 2)
         self.assertTriggerDispatched(
-            trigger="gmc_norr.new_run_directory",
+            trigger="gmc_norr_seqdata.new_run_directory",
             payload=payload,
         )
         self.assertTriggerDispatched(
-            trigger="gmc_norr.analysis_complete",
+            trigger="gmc_norr_seqdata.analysis_complete",
             payload=payload,
         )

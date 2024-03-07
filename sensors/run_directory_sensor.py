@@ -98,7 +98,7 @@ class RunDirectorySensor(PollingSensor):
                     state_changed = True
                     self._add_run_directory(run_directory_path, host, run_directory_state)
                     self.sensor_service.dispatch(
-                        trigger="gmc_norr.new_run_directory",
+                        trigger="gmc_norr_seqdata.new_run_directory",
                         payload=payload
                     )
                 else:
@@ -108,17 +108,17 @@ class RunDirectorySensor(PollingSensor):
                 if state_changed:
                     if run_directory_state == RunDirectoryState.COPYCOMPLETE:
                         self.sensor_service.dispatch(
-                            trigger="gmc_norr.copy_complete",
+                            trigger="gmc_norr_seqdata.copy_complete",
                             payload=payload,
                         )
                     elif run_directory_state == RunDirectoryState.RTACOMPLETE:
                         self.sensor_service.dispatch(
-                            trigger="gmc_norr.rta_complete",
+                            trigger="gmc_norr_seqdata.rta_complete",
                             payload=payload,
                         )
                     elif run_directory_state == RunDirectoryState.ANALYSISCOMPLETE:
                         self.sensor_service.dispatch(
-                            trigger="gmc_norr.analysis_complete",
+                            trigger="gmc_norr_seqdata.analysis_complete",
                             payload=payload,
                         )
 
