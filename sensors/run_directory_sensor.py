@@ -165,8 +165,8 @@ class RunDirectorySensor(PollingSensor):
         return RunDirectoryState.UNDEFINED
 
     def _client(self, hostname: str):
-        user = self.sensor_service.get_value("service_user", local=False)
-        keyfile = self.sensor_service.get_value("service_keyfile", local=False)
+        user = self.config.get("user")
+        keyfile = self.config.get("ssh_key")
 
         self._logger.debug(f"connecting to {hostname} as {user}")
 

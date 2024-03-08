@@ -15,3 +15,13 @@ run_directories:
           look on localhost.
         type: string
         required: false
+
+user:
+  type: string
+  required: true
+  default: stanley
+
+ssh_key:
+  type: string
+  required: true
+  default: /home/stanley/.ssh/id_rsa

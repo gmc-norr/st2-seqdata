@@ -21,14 +21,16 @@ run_directories:
       host: vsXXX.vll.se
 ```
 
+If the run directory sensor will run on any remote hosts, then the `user` and `ssh_key` parameters in the config need to be defined. These default to:
+
+```yaml
+user: stanley
+ssh_key: /home/stanley/.ssh/id_rsa
+```
+
 The pack needs to be able to read and write to the key-value store, more specifically the following keys:
 
 - `gmc_norr_seqdata.RunDirectorySensor:run_directories`
-
-Furthermore, the following keys must be defined in the key-value store:
-
-- `service_user`: username that the pack should act as when accessing data
-- `service_keyfile`: the path to the private ssh key that should be used for authentication
 
 ## Actions
 
