@@ -1,10 +1,10 @@
+import getpass
 import json
 from pathlib import Path
 from st2tests.base import BaseSensorTestCase
 import tempfile
 
 from run_directory_sensor import RunDirectorySensor, RunDirectoryState
-
 
 class RunDirectorySensorTestCase(BaseSensorTestCase):
     sensor_cls = RunDirectorySensor
@@ -13,17 +13,60 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         super(RunDirectorySensorTestCase, self).setUp()
 
         self.watch_directories = [
-            tempfile.TemporaryDirectory(),
-            tempfile.TemporaryDirectory(),
+            ("localhost", tempfile.TemporaryDirectory()),
+            ("127.0.0.1", tempfile.TemporaryDirectory()),
         ]
         self.sensor = self.get_sensor_instance(config={
-            "run_directories": [{"path": d.name} for d in self.watch_directories]
+            "run_directories": [
+                {"path": d[1].name, "host": d[0]} for d in self.watch_directories
+            ],
+            **self._get_user_credentials(),
         })
+
+    def _get_user_credentials(self):
+        ssh_dir = Path.home() / ".ssh"
+        keyfile = None
+
+        for f in ssh_dir.iterdir():
+            if f.name in ("authorized_keys", "config", "known_hosts") or f.suffix == ".pub":
+                continue
+            keyfile = f
+            break
+
+        return {
+            "user": getpass.getuser(),
+            "keyfile": keyfile,
+        }
+
+    def test_new_directory(self):
+        run_dirs = [
+            Path(self.watch_directories[0][1].name) / "run1",
+            Path(self.watch_directories[1][1].name) / "run2",
+        ]
+
+        run_dirs[0].mkdir()
+
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
+        datastore_directories = json.loads(
+            self.sensor_service.get_value("run_directories")
+        )
+        assert len(datastore_directories) == 1
+
+        (run_dirs[0] / RunDirectoryState.COPYCOMPLETE).touch()
+        run_dirs[1].mkdir()
+
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 3)
+        datastore_directories = json.loads(
+            self.sensor_service.get_value("run_directories")
+        )
+        assert len(datastore_directories) == 2
 
     def test_new_copycomplete(self):
         self.sensor.poll()
 
-        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory = Path(self.watch_directories[0][1].name) / "run1"
         run_directory.mkdir()
 
         self.sensor.poll()
@@ -57,7 +100,7 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         self.assertEqual(len(self.get_dispatched_triggers()), 2)
 
     def test_moved_run_directory(self):
-        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory = Path(self.watch_directories[0][1].name) / "run1"
         run_directory.mkdir()
 
         self.sensor.poll()
@@ -82,7 +125,7 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         assert len(datastore_directories) == 0
 
     def test_rtacomplete(self):
-        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory = Path(self.watch_directories[0][1].name) / "run1"
         run_directory.mkdir()
 
         rtacomplete = run_directory / RunDirectoryState.RTACOMPLETE
@@ -115,7 +158,7 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         self.assertEqual(len(self.get_dispatched_triggers()), 2)
 
     def test_analysis_complete(self):
-        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory = Path(self.watch_directories[0][1].name) / "run1"
         run_directory.mkdir()
 
         analysiscomplete = run_directory / RunDirectoryState.ANALYSISCOMPLETE
