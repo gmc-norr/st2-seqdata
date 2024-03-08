@@ -25,10 +25,10 @@ If the run directory sensor will run on any remote hosts, then the `user` and `s
 
 ```yaml
 user: stanley
-ssh_key: /home/stanley/.ssh/id_rsa
+ssh_key: /home/stanley/.ssh/stanley_rsa
 ```
 
-The pack needs to be able to read and write to the key-value store, more specifically the following keys:
+The user `sensor_service` needs to be able to read and write to the key-value store, more specifically the following keys:
 
 - `gmc_norr_seqdata.RunDirectorySensor:run_directories`
 
