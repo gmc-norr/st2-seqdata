@@ -1,0 +1,31 @@
+---
+run_directories:
+  type: array
+  items:
+    type: object
+    properties:
+      path:
+        description: >
+          The directory to watch for new run directories in.
+        type: string
+        required: true
+      host:
+        description: >
+          The host where the watch directory is located. By default it will
+          look on localhost.
+        type: string
+        required: false
+
+user:
+  description: >
+    The user to use for ssh connections
+  type: string
+  required: true
+  default: stanley
+
+ssh_key:
+  description: >
+    The ssh key to use for ssh connections
+  type: string
+  required: true
+  default: /home/stanley/.ssh/stanley_rsa
