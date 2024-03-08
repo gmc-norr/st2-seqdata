@@ -40,9 +40,7 @@ class LocalHostClient:
 
 
 class RunDirectoryState:
-    ANALYSISCOMPLETE = "AnalysisComplete.txt"
     COPYCOMPLETE = "CopyComplete.txt"
-    RTACOMPLETE = "RTAComplete.txt"
     UNDEFINED = "undefined"
 
 
@@ -112,16 +110,6 @@ class RunDirectorySensor(PollingSensor):
                             trigger="gmc_norr_seqdata.copy_complete",
                             payload=payload,
                         )
-                    elif run_directory_state == RunDirectoryState.RTACOMPLETE:
-                        self.sensor_service.dispatch(
-                            trigger="gmc_norr_seqdata.rta_complete",
-                            payload=payload,
-                        )
-                    elif run_directory_state == RunDirectoryState.ANALYSISCOMPLETE:
-                        self.sensor_service.dispatch(
-                            trigger="gmc_norr_seqdata.analysis_complete",
-                            payload=payload,
-                        )
 
             for line in stderr:
                 self._logger.warning(f"stderr: {line}")
@@ -149,9 +137,7 @@ class RunDirectorySensor(PollingSensor):
 
     def run_directory_state(self, path: Union[Path, str], client: Union[SSHClient, LocalHostClient]):
         states = [
-            RunDirectoryState.ANALYSISCOMPLETE,
             RunDirectoryState.COPYCOMPLETE,
-            RunDirectoryState.RTACOMPLETE,
         ]
 
         for state in states:
