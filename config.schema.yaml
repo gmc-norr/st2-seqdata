@@ -17,11 +17,15 @@ run_directories:
         required: false
 
 user:
+  description: >
+    The user to use for ssh connections
   type: string
   required: true
   default: stanley
 
 ssh_key:
+  description: >
+    The ssh key to use for ssh connections
   type: string
   required: true
-  default: /home/stanley/.ssh/id_rsa
+  default: /home/stanley/.ssh/stanley_rsa
