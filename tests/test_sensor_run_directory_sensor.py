@@ -4,7 +4,7 @@ from pathlib import Path
 from st2tests.base import BaseSensorTestCase
 import tempfile
 
-from run_directory_sensor import RunDirectorySensor, RunDirectoryState
+from run_directory_sensor import RunDirectorySensor, RunDirectoryState, DirectoryType
 
 class RunDirectorySensorTestCase(BaseSensorTestCase):
     sensor_cls = RunDirectorySensor
@@ -17,7 +17,7 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
             ("127.0.0.1", tempfile.TemporaryDirectory()),
         ]
         self.sensor = self.get_sensor_instance(config={
-            "run_directories": [
+            "illumina_directories": [
                 {"path": d[1].name, "host": d[0]} for d in self.watch_directories
             ],
             **self._get_user_credentials(),
@@ -72,10 +72,11 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
         self.assertTriggerDispatched(
-            trigger="gmc_norr_seqdata.new_run_directory",
+            trigger="gmc_norr_seqdata.new_directory",
             payload={
-                "run_directory": str(run_directory),
-                "host": "localhost"
+                "path": str(run_directory),
+                "host": "localhost",
+                "type": DirectoryType.RUN,
             }
         )
 
@@ -89,8 +90,9 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         self.assertTriggerDispatched(
             trigger="gmc_norr_seqdata.copy_complete",
             payload={
-                "run_directory": str(run_directory),
-                "host": "localhost"
+                "path": str(run_directory),
+                "host": "localhost",
+                "type": DirectoryType.RUN,
             }
         )
         self.assertEqual(len(self.get_dispatched_triggers()), 2)

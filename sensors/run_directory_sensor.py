@@ -44,14 +44,19 @@ class RunDirectoryState:
     UNDEFINED = "undefined"
 
 
+class DirectoryType:
+    RUN = "run"
+    ANALYSIS = "analysis"
+
+
 class RunDirectorySensor(PollingSensor):
-    _DATASTORE_KEY = "run_directories"
+    _DATASTORE_KEY = "illumina_directories"
     _dispatched_run_directories: List[Dict[str, str]]
 
     def __init__(self, sensor_service, config=None, poll_interval=60):
         super(RunDirectorySensor, self).__init__(sensor_service, config, poll_interval)
         self._logger = self.sensor_service.get_logger(__name__)
-        self._watched_directories = self.config.get("run_directories", [])
+        self._watched_directories = self.config.get("illumina_directories", [])
         self._run_directories = {}
 
         self._logger.debug("watched directories:")
@@ -79,14 +84,15 @@ class RunDirectorySensor(PollingSensor):
                 f"find {wd['path']} -maxdepth 1 -mindepth 1 -type d"
             )
 
-            # Add new run directories or update state of existing run directories
+            # Add new directories or update state of existing directories
             for line in stdout:
                 run_directory_path = Path(line.strip())
                 run_directory_state = self.run_directory_state(run_directory_path, client)
 
                 payload = {
-                    "run_directory": str(run_directory_path),
-                    "host": host
+                    "path": str(run_directory_path),
+                    "host": host,
+                    "type": DirectoryType.RUN,
                 }
 
                 existing_run_directories.add(f"{host}:{run_directory_path}")
@@ -97,7 +103,7 @@ class RunDirectorySensor(PollingSensor):
                     state_changed = True
                     self._add_run_directory(run_directory_path, host, run_directory_state)
                     self.sensor_service.dispatch(
-                        trigger="gmc_norr_seqdata.new_run_directory",
+                        trigger="gmc_norr_seqdata.new_directory",
                         payload=payload
                     )
                 else:
@@ -186,6 +192,7 @@ class RunDirectorySensor(PollingSensor):
         return self._run_directories.get(f"{host}:{str(run_directory)}", None)
 
     def _update_datastore(self):
+        self._logger.debug("updating datastore with run directories")
         self.sensor_service.set_value(
             self._DATASTORE_KEY,
             json.dumps(list(self._run_directories.values()))

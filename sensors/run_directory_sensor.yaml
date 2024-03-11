@@ -14,23 +14,31 @@ trigger_types:
     payload_schema:
       type: object
       properties:
-        run_directory:
+        path:
           type: string
           description: The directory in which the copycomplete file was found
         host:
           type: string
           description: The host on which the run directory was found
+        type:
+          type: string
+          description: The type of directory
+          enum: [run, analysis]
 
-  - name: new_run_directory
+  - name: new_directory
     pack: gmc_norr_seqdata
     description: >
       Triggers when a new run directory is found
     payload_schema:
       type: object
       properties:
-        run_directory:
+        path:
           type: string
           description: The path to the new run directory
         host:
           type: string
           description: The host on which the new run directory was found
+        type:
+          type: string
+          description: The type of directory
+          enum: [run, analysis]

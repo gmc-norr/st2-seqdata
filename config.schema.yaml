@@ -1,5 +1,5 @@
 ---
-run_directories:
+illumina_directories:
   type: array
   items:
     type: object
