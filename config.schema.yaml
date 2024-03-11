@@ -1,4 +1,5 @@
 ---
+# TODO: Make it possible to define what files triggers should be emitted for
 illumina_directories:
   type: array
   items:

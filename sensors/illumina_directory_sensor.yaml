@@ -1,6 +1,6 @@
 ---
-class_name: RunDirectorySensor
-entry_point: run_directory_sensor.py
+class_name: IlluminaDirectorySensor
+entry_point: illumina_directory_sensor.py
 description: >
   Sensor that emits triggers for seqencing run directories that are direct
   children of a specific directory.
@@ -10,7 +10,7 @@ trigger_types:
   - name: copy_complete
     pack: gmc_norr_seqdata
     description: >
-      Triggers when CopyComplete.txt is found in a run directory
+      Triggers when CopyComplete.txt is found in a directory
     payload_schema:
       type: object
       properties:
@@ -28,16 +28,16 @@ trigger_types:
   - name: new_directory
     pack: gmc_norr_seqdata
     description: >
-      Triggers when a new run directory is found
+      Triggers when a new directory is found
     payload_schema:
       type: object
       properties:
         path:
           type: string
-          description: The path to the new run directory
+          description: The path to the new directory
         host:
           type: string
-          description: The host on which the new run directory was found
+          description: The host on which the new directory was found
         type:
           type: string
           description: The type of directory

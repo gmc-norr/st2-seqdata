@@ -39,7 +39,7 @@ class LocalHostClient:
         pass
 
 
-class RunDirectoryState:
+class DirectoryState:
     COPYCOMPLETE = "CopyComplete.txt"
     UNDEFINED = "undefined"
 
@@ -49,30 +49,30 @@ class DirectoryType:
     ANALYSIS = "analysis"
 
 
-class RunDirectorySensor(PollingSensor):
+class IlluminaDirectorySensor(PollingSensor):
     _DATASTORE_KEY = "illumina_directories"
-    _dispatched_run_directories: List[Dict[str, str]]
+    _dispatched_directories: List[Dict[str, str]]
 
     def __init__(self, sensor_service, config=None, poll_interval=60):
-        super(RunDirectorySensor, self).__init__(sensor_service, config, poll_interval)
+        super(IlluminaDirectorySensor, self).__init__(sensor_service, config, poll_interval)
         self._logger = self.sensor_service.get_logger(__name__)
-        self._watched_directories = self.config.get("illumina_directories", [])
-        self._run_directories = {}
+        self._watched_directories = self.config.get(self._DATASTORE_KEY, [])
+        self._directories = {}
 
         self._logger.debug("watched directories:")
         for wd in self._watched_directories:
             self._logger.debug(f"  - {wd}")
 
-        run_directories = self.sensor_service.get_value(self._DATASTORE_KEY)
-        if run_directories is not None:
-            for rd in json.loads(run_directories):
-                self._run_directories[f"{rd['host']}:{rd['path']}"] = rd
+        directories = self.sensor_service.get_value(self._DATASTORE_KEY)
+        if directories is not None:
+            for rd in json.loads(directories):
+                self._directories[f"{rd['host']}:{rd['path']}"] = rd
 
     def setup(self):
         pass
 
     def poll(self):
-        existing_run_directories = set()
+        existing_directories = set()
 
         for wd in self._watched_directories:
             self._logger.debug(f"checking watch directory: {wd['path']}")
@@ -86,32 +86,32 @@ class RunDirectorySensor(PollingSensor):
 
             # Add new directories or update state of existing directories
             for line in stdout:
-                run_directory_path = Path(line.strip())
-                run_directory_state = self.run_directory_state(run_directory_path, client)
+                directory_path = Path(line.strip())
+                directory_state = self.directory_state(directory_path, client)
 
                 payload = {
-                    "path": str(run_directory_path),
+                    "path": str(directory_path),
                     "host": host,
                     "type": DirectoryType.RUN,
                 }
 
-                existing_run_directories.add(f"{host}:{run_directory_path}")
-                existing_run_directory = self._find_run_directory(run_directory_path, host)
+                existing_directories.add(f"{host}:{directory_path}")
+                existing_directory = self._find_directory(directory_path, host)
                 state_changed = False
 
-                if existing_run_directory is None:
+                if existing_directory is None:
                     state_changed = True
-                    self._add_run_directory(run_directory_path, host, run_directory_state)
+                    self._add_directory(directory_path, host, directory_state, DirectoryType.RUN)
                     self.sensor_service.dispatch(
                         trigger="gmc_norr_seqdata.new_directory",
                         payload=payload
                     )
                 else:
-                    state_changed = existing_run_directory["state"] != run_directory_state
-                    existing_run_directory["state"] = run_directory_state
+                    state_changed = existing_directory["state"] != directory_state
+                    existing_directory["state"] = directory_state
 
                 if state_changed:
-                    if run_directory_state == RunDirectoryState.COPYCOMPLETE:
+                    if directory_state == DirectoryState.COPYCOMPLETE:
                         self.sensor_service.dispatch(
                             trigger="gmc_norr_seqdata.copy_complete",
                             payload=payload,
@@ -122,10 +122,10 @@ class RunDirectorySensor(PollingSensor):
 
             client.close()
 
-        # Remove run directories that no longer exist
-        for k in set(self._run_directories.keys()) - existing_run_directories:
-            self._logger.debug(f"removing run directory: {self._run_directories[k]}")
-            self._run_directories.pop(k)
+        # Remove directories that no longer exist
+        for k in set(self._directories.keys()) - existing_directories:
+            self._logger.debug(f"removing directory: {self._directories[k]}")
+            self._directories.pop(k)
 
         self._update_datastore()
 
@@ -141,9 +141,9 @@ class RunDirectorySensor(PollingSensor):
     def remove_trigger(self, trigger):
         pass
 
-    def run_directory_state(self, path: Union[Path, str], client: Union[SSHClient, LocalHostClient]):
+    def directory_state(self, path: Union[Path, str], client: Union[SSHClient, LocalHostClient]):
         states = [
-            RunDirectoryState.COPYCOMPLETE,
+            DirectoryState.COPYCOMPLETE,
         ]
 
         for state in states:
@@ -154,7 +154,7 @@ class RunDirectorySensor(PollingSensor):
             if len(stdout.read()) > 0:
                 return state
 
-        return RunDirectoryState.UNDEFINED
+        return DirectoryState.UNDEFINED
 
     def _client(self, hostname: str):
         user = self.config.get("user")
@@ -180,20 +180,21 @@ class RunDirectorySensor(PollingSensor):
 
         return client
 
-    def _add_run_directory(self, run_directory: Path, host: str, state: str):
-        self._logger.debug(f"adding run directory: {host}:{run_directory}")
-        self._run_directories[f"{host}:{str(run_directory)}"] = {
-            "path": str(run_directory),
+    def _add_directory(self, directory: Path, host: str, state: str, type: str):
+        self._logger.debug(f"adding directory: {host}:{directory}")
+        self._directories[f"{host}:{str(directory)}"] = {
+            "path": str(directory),
             "host": host,
-            "state": state
+            "state": state,
+            "type": type,
         }
 
-    def _find_run_directory(self, run_directory: Union[Path, str], host: str):
-        return self._run_directories.get(f"{host}:{str(run_directory)}", None)
+    def _find_directory(self, directory: Union[Path, str], host: str):
+        return self._directories.get(f"{host}:{str(directory)}", None)
 
     def _update_datastore(self):
-        self._logger.debug("updating datastore with run directories")
+        self._logger.debug("updating datastore with directories")
         self.sensor_service.set_value(
             self._DATASTORE_KEY,
-            json.dumps(list(self._run_directories.values()))
+            json.dumps(list(self._directories.values()))
         )
