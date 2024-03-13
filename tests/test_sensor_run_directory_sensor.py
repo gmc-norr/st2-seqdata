@@ -152,3 +152,11 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
         )
         self.assertEqual(len(datastore_directories), 2)
+
+        (analysis_directory / "CopyComplete.txt").unlink()
+        analysis_directory.rmdir()
+
+        self.sensor.poll()
+
+        self.assertEqual(len(self.get_dispatched_triggers()), 4)
+        self.assertEqual(len(self.sensor._directories), 1)
