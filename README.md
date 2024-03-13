@@ -44,6 +44,13 @@ ref | description
 --- | ---
 IlluminaDirectorySensor | Sensor that emits triggers for seqencing run directories that are direct children of a specific directory, as well as any analysis directories that are found in those run directories.
 
+## Triggers
+
+ref | description
+--- | ---
+copy_complete | Triggers when CopyComplete.txt is found in a directory
+new_directory | Triggers when a new directory is found
+
 ## Running tests
 
 ```
