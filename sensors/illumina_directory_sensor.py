@@ -72,7 +72,14 @@ class IlluminaDirectorySensor(PollingSensor):
         pass
 
     def poll(self):
+        self._check_for_run()
+        self._check_for_analysis()
+        self._update_datastore()
+
+    def _check_for_run(self):
         existing_directories = set()
+
+        # TODO: group watched directories by host and process each as a unit
 
         for wd in self._watched_directories:
             self._logger.debug(f"checking watch directory: {wd['path']}")
@@ -127,7 +134,67 @@ class IlluminaDirectorySensor(PollingSensor):
             self._logger.debug(f"removing directory: {self._directories[k]}")
             self._directories.pop(k)
 
-        self._update_datastore()
+    def _check_for_analysis(self):
+        """
+        Check for an analysis directory inside run directories that are COPYCOMPLETE.
+        """
+        existing_directories = set()
+        run_directories = [rd for rd in self._directories.values() if rd["type"] == DirectoryType.RUN and rd["state"] == DirectoryState.COPYCOMPLETE]
+
+        for rd in run_directories:
+            if rd["type"] != DirectoryType.RUN or rd["state"] != DirectoryState.COPYCOMPLETE:
+                continue
+            self._logger.debug(f"checking for analysis directory in {rd['host']}{rd['path']}")
+
+            host = rd.get("host", "localhost") or "localhost"
+            client = self._client(host)
+
+            _, stdout, stderr = client.exec_command(
+                f"find {rd['path']} -maxdepth 1 -mindepth 1 -type d -name Analysis"
+            )
+
+            analysis_dir = stdout.read().strip()
+            if not analysis_dir:
+                continue
+
+            _, stdout, stderr = client.exec_command(
+                f"find {analysis_dir} -maxdepth 1 -mindepth 1 -type f -name CopyComplete.txt"
+            )
+
+            directory_state = self.directory_state(str(analysis_dir), client)
+
+            existing_directories.add(f"{host}:{analysis_dir}")
+            existing_directory = self._find_directory(str(analysis_dir), host)
+            state_changed = False
+
+            payload = {
+                "path": analysis_dir,
+                "host": host,
+                "type": DirectoryType.ANALYSIS,
+            }
+
+            if existing_directory is None:
+                state_changed = True
+                self._add_directory(analysis_dir, host, directory_state, DirectoryType.ANALYSIS)
+                self.sensor_service.dispatch(
+                    trigger="gmc_norr_seqdata.new_directory",
+                    payload=payload
+                )
+            else:
+                state_changed = existing_directory["state"] != directory_state
+                existing_directory["state"] = directory_state
+
+            if state_changed:
+                for line in stderr:
+                    self._logger.warning(f"stderr: {line}")
+
+                if directory_state == DirectoryState.COPYCOMPLETE:
+                    self.sensor_service.dispatch(
+                        trigger="gmc_norr_seqdata.copy_complete",
+                        payload=payload,
+                    )
+
+            client.close()
 
     def cleanup(self):
         pass

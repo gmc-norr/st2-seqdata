@@ -125,3 +125,25 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
         )
         assert len(datastore_directories) == 0
+
+    def test_analysis_directory(self):
+        run_directory = Path(self.watch_directories[0][1].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+
+        analysis_directory = run_directory / "Analysis"
+        analysis_directory.mkdir()
+        (analysis_directory / "CopyComplete.txt").touch()
+
+        self.sensor.poll()
+
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.copy_complete",
+            payload={
+                "path": str(analysis_directory),
+                "host": "localhost",
+                "type": DirectoryType.ANALYSIS,
+            }
+        )
+        self.assertEqual(len(self.get_dispatched_triggers()), 4)
+        self.assertEqual(len(self.sensor._directories), 2)
