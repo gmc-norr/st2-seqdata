@@ -51,6 +51,9 @@ ref | description
 copy_complete | Triggers when CopyComplete.txt is found in a directory
 new_directory | Triggers when a new directory is found
 
+> [!TIP]
+> Note that the triggers that are connected to analysis directories will not be emitted unless `CopyComplete.txt` is found in its parent run diretory.
+
 ## Running tests
 
 ```
