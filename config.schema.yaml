@@ -1,5 +1,8 @@
 ---
-run_directories:
+# TODO: Make it possible to define what files triggers should be emitted for
+illumina_directories:
+  description: >
+    The directories in which to watch for new Illumina sequencing runs.
   type: array
   items:
     type: object

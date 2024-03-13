@@ -4,20 +4,20 @@ from pathlib import Path
 from st2tests.base import BaseSensorTestCase
 import tempfile
 
-from run_directory_sensor import RunDirectorySensor, RunDirectoryState
+from illumina_directory_sensor import IlluminaDirectorySensor, DirectoryState, DirectoryType
 
-class RunDirectorySensorTestCase(BaseSensorTestCase):
-    sensor_cls = RunDirectorySensor
+class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
+    sensor_cls = IlluminaDirectorySensor
 
     def setUp(self):
-        super(RunDirectorySensorTestCase, self).setUp()
+        super(IlluminaDirectorySensorTestCase, self).setUp()
 
         self.watch_directories = [
             ("localhost", tempfile.TemporaryDirectory()),
             ("127.0.0.1", tempfile.TemporaryDirectory()),
         ]
         self.sensor = self.get_sensor_instance(config={
-            "run_directories": [
+            "illumina_directories": [
                 {"path": d[1].name, "host": d[0]} for d in self.watch_directories
             ],
             **self._get_user_credentials(),
@@ -49,17 +49,17 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
         datastore_directories = json.loads(
-            self.sensor_service.get_value("run_directories")
+            self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
         )
         assert len(datastore_directories) == 1
 
-        (run_dirs[0] / RunDirectoryState.COPYCOMPLETE).touch()
+        (run_dirs[0] / DirectoryState.COPYCOMPLETE).touch()
         run_dirs[1].mkdir()
 
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 3)
         datastore_directories = json.loads(
-            self.sensor_service.get_value("run_directories")
+            self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
         )
         assert len(datastore_directories) == 2
 
@@ -72,14 +72,15 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
         self.assertTriggerDispatched(
-            trigger="gmc_norr_seqdata.new_run_directory",
+            trigger="gmc_norr_seqdata.new_directory",
             payload={
-                "run_directory": str(run_directory),
-                "host": "localhost"
+                "path": str(run_directory),
+                "host": "localhost",
+                "type": DirectoryType.RUN,
             }
         )
 
-        copycomplete = run_directory / RunDirectoryState.COPYCOMPLETE
+        copycomplete = run_directory / DirectoryState.COPYCOMPLETE
         copycomplete.touch()
 
         assert copycomplete.exists()
@@ -89,8 +90,9 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         self.assertTriggerDispatched(
             trigger="gmc_norr_seqdata.copy_complete",
             payload={
-                "run_directory": str(run_directory),
-                "host": "localhost"
+                "path": str(run_directory),
+                "host": "localhost",
+                "type": DirectoryType.RUN,
             }
         )
         self.assertEqual(len(self.get_dispatched_triggers()), 2)
@@ -104,22 +106,57 @@ class RunDirectorySensorTestCase(BaseSensorTestCase):
         run_directory.mkdir()
 
         self.sensor.poll()
-        assert len(self.sensor._run_directories) == 1
+        assert len(self.sensor._directories) == 1
         datastore_directories = json.loads(
-            self.sensor_service.get_value("run_directories")
+            self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
         )
         assert len(datastore_directories) == 1
         assert datastore_directories[0]["path"] == str(run_directory)
         assert datastore_directories[0]["host"] == "localhost"
-        assert datastore_directories[0]["state"] == RunDirectoryState.UNDEFINED
+        assert datastore_directories[0]["state"] == DirectoryState.UNDEFINED
 
         self.sensor.poll()
-        assert len(self.sensor._run_directories) == 1
+        assert len(self.sensor._directories) == 1
         run_directory.rmdir()
 
         self.sensor.poll()
-        assert len(self.sensor._run_directories) == 0
+        assert len(self.sensor._directories) == 0
         datastore_directories = json.loads(
-            self.sensor_service.get_value("run_directories")
+            self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
         )
         assert len(datastore_directories) == 0
+
+    def test_analysis_directory(self):
+        run_directory = Path(self.watch_directories[0][1].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+
+        analysis_directory = run_directory / "Analysis"
+        analysis_directory.mkdir()
+        (analysis_directory / "CopyComplete.txt").touch()
+
+        self.sensor.poll()
+
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.copy_complete",
+            payload={
+                "path": str(analysis_directory),
+                "host": "localhost",
+                "type": DirectoryType.ANALYSIS,
+            }
+        )
+        self.assertEqual(len(self.get_dispatched_triggers()), 4)
+        self.assertEqual(len(self.sensor._directories), 2)
+
+        datastore_directories = json.loads(
+            self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
+        )
+        self.assertEqual(len(datastore_directories), 2)
+
+        (analysis_directory / "CopyComplete.txt").unlink()
+        analysis_directory.rmdir()
+
+        self.sensor.poll()
+
+        self.assertEqual(len(self.get_dispatched_triggers()), 4)
+        self.assertEqual(len(self.sensor._directories), 1)
