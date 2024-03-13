@@ -2,6 +2,7 @@ import getpass
 import json
 from pathlib import Path
 from st2tests.base import BaseSensorTestCase
+import subprocess
 import tempfile
 
 from illumina_directory_sensor import IlluminaDirectorySensor, DirectoryState, DirectoryType
@@ -160,3 +161,17 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         self.assertEqual(len(self.get_dispatched_triggers()), 4)
         self.assertEqual(len(self.sensor._directories), 1)
+
+    def test_deep_run_directory(self):
+        run_directory = Path(self.watch_directories[0][1].name) / "run1"
+        run_directory.mkdir()
+        data_directory = run_directory / "Data"
+        data_directory.mkdir(700)
+
+        raised_exception = False
+        try:
+            self.sensor.poll()
+        except subprocess.CalledProcessError:
+            raised_exception = True
+
+        self.assertFalse(raised_exception, "Exception when polling sensor")
