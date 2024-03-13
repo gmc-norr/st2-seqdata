@@ -215,7 +215,7 @@ class IlluminaDirectorySensor(PollingSensor):
 
         for state in states:
             _, stdout, _ = client.exec_command(
-                f"find {str(path)} -name {state}"
+                f"find {str(path)} -maxdepth 1 -mindepth 1 -type f -name {state}"
             )
 
             if len(stdout.read()) > 0:
