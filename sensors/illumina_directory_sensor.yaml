@@ -3,7 +3,8 @@ class_name: IlluminaDirectorySensor
 entry_point: illumina_directory_sensor.py
 description: >
   Sensor that emits triggers for seqencing run directories that are direct
-  children of a specific directory.
+  children of a specific directory, as well as any analysis directories that
+  are found in those run directories.
 poll_interval: 60
 enabled: false
 trigger_types:
@@ -19,7 +20,7 @@ trigger_types:
           description: The directory in which the copycomplete file was found
         host:
           type: string
-          description: The host on which the run directory was found
+          description: The host on which the directory was found
         type:
           type: string
           description: The type of directory

@@ -42,7 +42,7 @@ The user `sensor_service` needs to be able to read and write to the key-value st
 
 ref | description
 --- | ---
-IlluminaDirectorySensor | Sensor that emits triggers for seqencing run directories that are direct children of a specific directory
+IlluminaDirectorySensor | Sensor that emits triggers for seqencing run directories that are direct children of a specific directory, as well as any analysis directories that are found in those run directories.
 
 ## Running tests
 
