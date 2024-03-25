@@ -8,23 +8,26 @@ description: >
 poll_interval: 60
 enabled: false
 trigger_types:
-  - name: copy_complete
+  - name: state_change
     pack: gmc_norr_seqdata
     description: >
-      Triggers when CopyComplete.txt is found in a directory
+      Triggers when the state of a directory changes
     payload_schema:
       type: object
       properties:
         path:
           type: string
-          description: The directory in which the copycomplete file was found
-        host:
+          description: The directory whose state has changed
+        state:
           type: string
-          description: The host on which the directory was found
-        type:
+          description: The state of the directory
+        directory_type:
           type: string
           description: The type of directory
           enum: [run, analysis]
+        message:
+          type: string
+          description: A message associated with the state change
 
   - name: new_directory
     pack: gmc_norr_seqdata
@@ -36,10 +39,35 @@ trigger_types:
         path:
           type: string
           description: The path to the new directory
-        host:
+        state:
           type: string
-          description: The host on which the new directory was found
-        type:
+          description: The state of the directory
+        directory_type:
           type: string
           description: The type of directory
           enum: [run, analysis]
+        message:
+          type: string
+          description: A message associated with the state change
+
+  - name: incomplete_directory
+    pack: gmc_norr_seqdata
+    description: >
+      Triggers when a new directory is found, but it is somehow incomplete
+    payload_schema:
+      type: object
+      properties:
+        path:
+          type: string
+          description: The path to the directory
+        state:
+          type: string
+          description: The state of the directory
+          const: incomplete
+        directory_type:
+          type: string
+          description: The type of directory
+          enum: [run, analysis]
+        message:
+          type: string
+          description: A message describing why the directory is incomplete

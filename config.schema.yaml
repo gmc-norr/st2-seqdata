@@ -3,21 +3,29 @@
 illumina_directories:
   description: >
     The directories in which to watch for new Illumina sequencing runs.
+  required: true
   type: array
   items:
-    type: object
-    properties:
-      path:
-        description: >
-          The directory to watch for new run directories in.
-        type: string
-        required: true
-      host:
-        description: >
-          The host where the watch directory is located. By default it will
-          look on localhost.
-        type: string
-        required: false
+    description: >
+      The directory to watch for new run directories in.
+    type: string
+    required: true
+
+cleve:
+  description: >
+    Config for the accessing cleve (https://github.com/gmc-norr/cleve)
+  type: object
+  required: true
+  properties:
+    host: 
+      type: string
+      required: true
+    port:
+      type: number
+      required: true
+    api_key:
+      type: string
+      required: true
 
 user:
   description: >
