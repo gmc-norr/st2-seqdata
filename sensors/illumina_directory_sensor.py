@@ -30,6 +30,8 @@ PLATFORMS = {
 class DirectoryState:
     NEW = "new"
     READY = "ready"
+    ERROR = "error"
+    MOVED = "moved"
     PENDING = "pending"
     UNDEFINED = "undefined"
     INCOMPLETE = "incomplete"
@@ -46,7 +48,6 @@ class IlluminaDirectorySensor(PollingSensor):
         super(IlluminaDirectorySensor, self).__init__(sensor_service, config, poll_interval)
         self._logger = self.sensor_service.get_logger(__name__)
         self._watched_directories = self.config.get("illumina_directories", [])
-        self._directories = {}
 
         if "cleve_service" in self.config:
             # This is for testing purposes. In production, host
@@ -106,19 +107,27 @@ class IlluminaDirectorySensor(PollingSensor):
                         message=str(e),
                     )
                     continue
+                except ET.ParseError as e:
+                    self._logger.debug(f"error parsing RunParameters.xml: {dirpath}")
+                    self._emit_trigger(
+                        "incomplete_directory",
+                        dirpath,
+                        DirectoryState.ERROR,
+                        DirectoryType.RUN,
+                        message=str(e)
+                    )
+                    continue
                 self._logger.debug(f"identified run as {run_id}")
                 if run_id in registered_rundirs:
                     registered_state = registered_rundirs[run_id]["state_history"][0]["state"]
-                    current_state = self.directory_state(dirpath)
-
-                    print(registered_state, current_state)
+                    current_state = self.run_directory_state(dirpath)
 
                     if registered_state != current_state:
                         self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
                         self._emit_trigger("state_change", dirpath, current_state, DirectoryType.RUN)
                 else:
                     self._logger.debug(f"new directory found: {dirpath}")
-                    self._emit_trigger("new_directory", dirpath, DirectoryState.NEW, DirectoryType.RUN)
+                    self._emit_trigger("new_directory", dirpath, self.run_directory_state(dirpath), DirectoryType.RUN)
 
     def _check_for_analysis(self):
         """
@@ -130,12 +139,11 @@ class IlluminaDirectorySensor(PollingSensor):
         self._logger.debug(f"found {len(runs)} ready NovaSeq runs")
 
         for run in runs.values():
-            print(run["path"])
             analysis_path = Path(run["path"]) / "Analysis"
             if not analysis_path.is_dir():
                 # There are no analysis directories to check
                 continue
-            existing_analyses = {}
+            existing_analyses: Dict[str, Dict] = {}
             for analysis in run.get("analysis", []):
                 existing_analyses[analysis["path"]] = analysis
 
@@ -144,16 +152,16 @@ class IlluminaDirectorySensor(PollingSensor):
             for analysis_dir in analysis_dirs:
                 dirpath = Path(root) / str(analysis_dir)
                 self._logger.debug(f"looking at analysis at {dirpath}")
-                if dirpath in existing_analyses:
+                if str(dirpath) in existing_analyses:
                     self._logger.debug(f"analysis dir has been registered for run, checking state")
-                    registered_state = existing_analyses[dirpath]["state"]
-                    current_state = self.directory_state(dirpath)
+                    registered_state = existing_analyses[str(dirpath)]["state"]
+                    current_state = self.analysis_directory_state(dirpath)
                     if registered_state != current_state:
                         self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
                         self._emit_trigger("state_change", dirpath, current_state, DirectoryType.ANALYSIS)
                 else:
                     self._logger.debug(f"new analysis found: {dirpath}")
-                    self._emit_trigger("new_directory", dirpath, self.directory_state(dirpath), DirectoryType.ANALYSIS)
+                    self._emit_trigger("new_directory", dirpath, self.analysis_directory_state(dirpath), DirectoryType.ANALYSIS)
 
     def _emit_trigger(self, trigger: str, path: Path, state: str, type: str, message: str = ""):
         """
@@ -192,7 +200,10 @@ class IlluminaDirectorySensor(PollingSensor):
         runparamsfile = path / "RunParameters.xml"
         if not runparamsfile.is_file():
             raise IOError(f"{runparamsfile} does not exist")
-        tree = ET.parse(runparamsfile)
+        try:
+            tree = ET.parse(runparamsfile)
+        except ET.ParseError:
+            raise
         root = tree.getroot()
 
         for p, d in PLATFORMS.items():
@@ -226,7 +237,7 @@ class IlluminaDirectorySensor(PollingSensor):
     def remove_trigger(self, trigger):
         pass
 
-    def directory_state(self, path: Path) -> str:
+    def run_directory_state(self, path: Path) -> str:
         """
         Get the state of a directory
 
@@ -256,3 +267,10 @@ class IlluminaDirectorySensor(PollingSensor):
             return DirectoryState.INCOMPLETE
         else:
             return DirectoryState.UNDEFINED
+
+    def analysis_directory_state(self, path: Path) -> str:
+        copycomplete = path / "CopyComplete.txt"
+        if copycomplete.is_file():
+            return DirectoryState.READY
+        else:
+            return DirectoryState.PENDING

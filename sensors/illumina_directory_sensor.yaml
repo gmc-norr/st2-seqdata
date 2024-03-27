@@ -54,6 +54,7 @@ trigger_types:
     pack: gmc_norr_seqdata
     description: >
       Triggers when a new directory is found, but it is somehow incomplete
+      and thus cannot be added to the database.
     payload_schema:
       type: object
       properties:
@@ -63,7 +64,7 @@ trigger_types:
         state:
           type: string
           description: The state of the directory
-          const: incomplete
+          enum: [incomplete, error]
         directory_type:
           type: string
           description: The type of directory

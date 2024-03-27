@@ -4,8 +4,10 @@ from pathlib import Path
 from st2tests.base import BaseSensorTestCase
 import subprocess
 import tempfile
+import time
 
-from illumina_directory_sensor import IlluminaDirectorySensor, DirectoryState, DirectoryType
+from illumina_directory_sensor import IlluminaDirectorySensor, DirectoryState, DirectoryType, PLATFORMS
+from cleve_service import CleveMock
 
 class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
     sensor_cls = IlluminaDirectorySensor
@@ -14,164 +16,197 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         super(IlluminaDirectorySensorTestCase, self).setUp()
 
         self.watch_directories = [
-            ("localhost", tempfile.TemporaryDirectory()),
-            ("127.0.0.1", tempfile.TemporaryDirectory()),
+            tempfile.TemporaryDirectory(),
+            tempfile.TemporaryDirectory(),
         ]
+        self.cleve = CleveMock()
         self.sensor = self.get_sensor_instance(config={
-            "illumina_directories": [
-                {"path": d[1].name, "host": d[0]} for d in self.watch_directories
-            ],
-            **self._get_user_credentials(),
+            "illumina_directories": [Path(d.name) for d in self.watch_directories],
+            "cleve_service": self.cleve,
         })
 
-    def _get_user_credentials(self):
-        ssh_dir = Path.home() / ".ssh"
-        keyfile = None
+    def assertTriggerDispatched(self, trigger, payload):
+        """
+        Assert that a a specific trigger has been dispatched with the given
+        payload. This is an overload of the assertTriggerDispatched function in
+        BaseSensorTestCase that allows for a subset of keys in the payload to
+        be matched. If the payload passed to this function is a valid subset of
+        the actual payload, and the values match, then it is considered a
+        match and the assertion succeeds.
+        """
+        for t in self.get_dispatched_triggers():
+            if t["trigger"] == trigger:
+                subset_payload = {k: t["payload"].get(k) for k in payload.keys()}
+                if subset_payload == payload:
+                    break
+        else:
+            raise AssertionError(
+                f"trigger '{trigger}' with payload {payload} not dispatched"
+            )
 
-        for f in ssh_dir.iterdir():
-            if f.name in ("authorized_keys", "config", "known_hosts") or f.suffix == ".pub":
-                continue
-            keyfile = f
-            break
-
-        return {
-            "user": getpass.getuser(),
-            "keyfile": keyfile,
-        }
+    def _write_basic_runparams(self, dir: Path, platform: str, run_id: str):
+        runparamsfile = dir / "RunParameters.xml"
+        with open(runparamsfile, "w") as f:
+            p = PLATFORMS[platform]
+            runparams = f"""
+                <RunParameters>
+                    <{p["serial_tag"]}>{p["serial_pattern"]}1234</{p["serial_tag"]}>
+                    <RunId>{run_id}</RunId>
+                </RunParameters>
+            """
+            f.write(runparams)
 
     def test_new_directory(self):
         run_dirs = [
-            Path(self.watch_directories[0][1].name) / "run1",
-            Path(self.watch_directories[1][1].name) / "run2",
+            Path(self.watch_directories[0].name) / "run1",
+            Path(self.watch_directories[1].name) / "run2",
         ]
 
         run_dirs[0].mkdir()
 
+        # Should trigger an incomplete directory
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
-        datastore_directories = json.loads(
-            self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.incomplete_directory",
+            payload={
+                "path": str(run_dirs[0]),
+                "state": DirectoryState.INCOMPLETE,
+                "type": DirectoryType.RUN,
+            }
         )
-        assert len(datastore_directories) == 1
 
-        (run_dirs[0] / DirectoryState.COPYCOMPLETE).touch()
-        run_dirs[1].mkdir()
-
+        (run_dirs[0] / "RunParameters.xml").touch()
+        # Should trigger an incomplete directory
         self.sensor.poll()
-        self.assertEqual(len(self.get_dispatched_triggers()), 3)
-        datastore_directories = json.loads(
-            self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
+        # Empty RunParameters.xml should be treated as an error
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.incomplete_directory",
+            payload={
+                "path": str(run_dirs[0]),
+                "state": DirectoryState.ERROR,
+                "type": DirectoryType.RUN,
+            }
         )
-        assert len(datastore_directories) == 2
 
-    def test_new_copycomplete(self):
+        self._write_basic_runparams(run_dirs[0], "NovaSeq", "run1")
+
+        # Should trigger a new directory with pending state since
+        # CopyComplete.txt does not yet exist
         self.sensor.poll()
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.new_directory",
+            payload={
+                "path": str(run_dirs[0]),
+                "state": DirectoryState.PENDING,
+                "type": DirectoryType.RUN,
+            }
+        )
 
-        run_directory = Path(self.watch_directories[0][1].name) / "run1"
+        # Add the run to the database
+        self.cleve.add_run({
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{"state": "new", "time": time.localtime()}],
+            "path": str(run_dirs[0]),
+        })
+
+        (run_dirs[0] / PLATFORMS["NovaSeq"]["ready_marker"]).touch()
+
+        # Should trigger a state change
+        self.sensor.poll()
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.state_change",
+            payload={
+                "path": str(run_dirs[0]),
+                "state": DirectoryState.READY,
+                "type": DirectoryType.RUN,
+            }
+        )
+
+        self.assertEqual(len(self.get_dispatched_triggers()), 4)
+
+    def test_moved_run_directory(self):
+        self.cleve.add_run({
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{"state": "new", "time": time.localtime()}],
+            "path": str(Path(self.watch_directories[0].name) / "run1"),
+        })
+
+        # The directory does not exist, so it has been (re)moved
+        self.sensor.poll()
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.state_change",
+            payload={
+                "path": str(Path(self.watch_directories[0].name) / "run1"),
+                "state": DirectoryState.MOVED,
+                "type": DirectoryType.RUN,
+            }
+        )
+
+    def test_analysis_directory(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
 
+        analysis_directory = run_directory / "Analysis" / "1"
+        analysis_directory.mkdir(parents=True)
+
+        # Should find a new run directory
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
         self.assertTriggerDispatched(
             trigger="gmc_norr_seqdata.new_directory",
             payload={
                 "path": str(run_directory),
-                "host": "localhost",
+                "state": DirectoryState.READY,
                 "type": DirectoryType.RUN,
             }
         )
 
-        copycomplete = run_directory / DirectoryState.COPYCOMPLETE
-        copycomplete.touch()
+        # Add the run to the database
+        self.cleve.add_run({
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{
+                "state": DirectoryState.READY,
+                "time": time.localtime(),
+            }],
+            "path": str(run_directory),
+            "analysis": [],
+        })
 
-        assert copycomplete.exists()
-
+        # Should find a new analysis directory with pending state
         self.sensor.poll()
-
         self.assertTriggerDispatched(
-            trigger="gmc_norr_seqdata.copy_complete",
-            payload={
-                "path": str(run_directory),
-                "host": "localhost",
-                "type": DirectoryType.RUN,
-            }
-        )
-        self.assertEqual(len(self.get_dispatched_triggers()), 2)
-
-        # No more triggers should be emitted for the same directory
-        self.sensor.poll()
-        self.assertEqual(len(self.get_dispatched_triggers()), 2)
-
-    def test_moved_run_directory(self):
-        run_directory = Path(self.watch_directories[0][1].name) / "run1"
-        run_directory.mkdir()
-
-        self.sensor.poll()
-        assert len(self.sensor._directories) == 1
-        datastore_directories = json.loads(
-            self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
-        )
-        assert len(datastore_directories) == 1
-        assert datastore_directories[0]["path"] == str(run_directory)
-        assert datastore_directories[0]["host"] == "localhost"
-        assert datastore_directories[0]["state"] == DirectoryState.UNDEFINED
-
-        self.sensor.poll()
-        assert len(self.sensor._directories) == 1
-        run_directory.rmdir()
-
-        self.sensor.poll()
-        assert len(self.sensor._directories) == 0
-        datastore_directories = json.loads(
-            self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
-        )
-        assert len(datastore_directories) == 0
-
-    def test_analysis_directory(self):
-        run_directory = Path(self.watch_directories[0][1].name) / "run1"
-        run_directory.mkdir()
-        (run_directory / "CopyComplete.txt").touch()
-
-        analysis_directory = run_directory / "Analysis"
-        analysis_directory.mkdir()
-        (analysis_directory / "CopyComplete.txt").touch()
-
-        self.sensor.poll()
-
-        self.assertTriggerDispatched(
-            trigger="gmc_norr_seqdata.copy_complete",
+            trigger="gmc_norr_seqdata.new_directory",
             payload={
                 "path": str(analysis_directory),
-                "host": "localhost",
+                "state": DirectoryState.PENDING,
                 "type": DirectoryType.ANALYSIS,
             }
         )
-        self.assertEqual(len(self.get_dispatched_triggers()), 4)
-        self.assertEqual(len(self.sensor._directories), 2)
 
-        datastore_directories = json.loads(
-            self.sensor_service.get_value(self.sensor._DATASTORE_KEY)
+        # Add analysis directory to database
+        self.cleve.update_run(
+            run_id="run1",
+            analysis={
+                "path": str(analysis_directory),
+                "state": DirectoryState.PENDING,
+            },
         )
-        self.assertEqual(len(datastore_directories), 2)
 
-        (analysis_directory / "CopyComplete.txt").unlink()
-        analysis_directory.rmdir()
+        (analysis_directory / "CopyComplete.txt").touch()
 
+        # Should find a state change of the analysis directory
         self.sensor.poll()
-
-        self.assertEqual(len(self.get_dispatched_triggers()), 4)
-        self.assertEqual(len(self.sensor._directories), 1)
-
-    def test_deep_run_directory(self):
-        run_directory = Path(self.watch_directories[0][1].name) / "run1"
-        run_directory.mkdir()
-        data_directory = run_directory / "Data"
-        data_directory.mkdir(700)
-
-        raised_exception = False
-        try:
-            self.sensor.poll()
-        except subprocess.CalledProcessError:
-            raised_exception = True
-
-        self.assertFalse(raised_exception, "Exception when polling sensor")
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.state_change",
+            payload={
+                "path": str(analysis_directory),
+                "state": DirectoryState.READY,
+                "type": DirectoryType.ANALYSIS,
+            }
+        )
