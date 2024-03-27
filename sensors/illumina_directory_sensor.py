@@ -5,6 +5,8 @@ from st2reactor.sensor.base import PollingSensor
 from typing import Dict
 import xml.etree.ElementTree as ET
 
+from cleve_service import Cleve
+
 
 PLATFORMS = {
     "NovaSeq": {
@@ -46,9 +48,15 @@ class IlluminaDirectorySensor(PollingSensor):
         self._watched_directories = self.config.get("illumina_directories", [])
         self._directories = {}
 
-        cleve_host = self.config.get("cleve", {}).get("host")
-        cleve_port = self.config.get("cleve", {}).get("port")
-        self.cleve_uri = f"http://{cleve_host}:{cleve_port}/api"
+        if "cleve_service" in self.config:
+            # This is for testing purposes. In production, host
+            # and port should be used
+            self.cleve = self.config.get("cleve_service")
+        else:
+            self.cleve = Cleve(
+                self.config.get("cleve", {}).get("host"),
+                self.config.get("cleve", {}).get("port"),
+            )
 
         self._logger.debug("watched directories:")
         for wd in self._watched_directories:
@@ -62,31 +70,9 @@ class IlluminaDirectorySensor(PollingSensor):
         Poll the file system for new run and analysis directories
         as well as state changes of existing directories.
         """
-        registered_rundirs = self._get_existing_runs()
+        registered_rundirs = self.cleve.get_runs()
         self._check_for_run(registered_rundirs)
         self._check_for_analysis()
-
-    def _get_existing_runs(self) -> Dict[str, Dict]:
-        """
-        Get existing run directories.
-
-        :return: Existing run directories
-        :rtype: dict
-        """
-        uri = f"{self.cleve_uri}/runs?brief"
-
-        r = requests.get(uri)
-        if r.status_code != 200:
-            self._logger.error(f"Failed to get existing runs: {r.status_code}")
-            raise RuntimeError(f"failed to fetch runs from {uri}")
-
-        runs = r.json()
-
-        rundirs = {}
-        for run in runs:
-            rundirs[run["run_id"]] = run
-
-        return rundirs
 
     def _check_for_run(self, registered_rundirs: Dict[str, Dict]) -> None:
         """
@@ -139,17 +125,11 @@ class IlluminaDirectorySensor(PollingSensor):
         Check for an analysis directory inside NovaSeq run directories that
         are ready.
         """
-        uri = f"{self.cleve_uri}/runs?platform=NovaSeq&state=ready"
-        r = requests.get(uri)
-        if r.status_code != 200:
-            self._logger.error(f"Failed to get existing runs: {r.status_code}")
-            raise RuntimeError(f"failed to fetch runs from {uri}")
-
-        runs = r.json()
+        runs = self.cleve.get_runs(platform="NovaSeq", state="ready")
 
         self._logger.debug(f"found {len(runs)} ready NovaSeq runs")
 
-        for run in runs:
+        for run in runs.values():
             print(run["path"])
             analysis_path = Path(run["path"]) / "Analysis"
             if not analysis_path.is_dir():
