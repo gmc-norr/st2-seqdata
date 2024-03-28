@@ -87,6 +87,7 @@ class IlluminaDirectorySensor(PollingSensor):
         :param registered_rundirs: Existing run directories
         :type registered_rundirs: dict
         """
+        moved_dirs = set()
         for wd in self._watched_directories:
             self._logger.debug(f"checking watch directory: {wd}")
 
@@ -121,6 +122,12 @@ class IlluminaDirectorySensor(PollingSensor):
                     continue
                 self._logger.debug(f"identified run as {run_id}")
                 if run_id in registered_rundirs:
+                    registered_path = registered_rundirs[run_id]["path"]
+                    if registered_path != str(dirpath):
+                        moved_dirs.add(run_id)
+                        self._logger.debug(f"{dirpath} moved from {registered_path}")
+                        self._emit_trigger("state_change", run_id, dirpath, DirectoryState.MOVED, DirectoryType.RUN)
+
                     registered_state = registered_rundirs[run_id]["state_history"][0]["state"]
                     current_state = self.run_directory_state(dirpath)
 
@@ -130,6 +137,19 @@ class IlluminaDirectorySensor(PollingSensor):
                 else:
                     self._logger.debug(f"new directory found: {dirpath}")
                     self._emit_trigger("new_directory", run_id, dirpath, self.run_directory_state(dirpath), DirectoryType.RUN)
+
+        # Check if existing runs have been moved out of the watched directories
+        for run in registered_rundirs.values():
+            dirpath = Path(run["path"])
+            if run["run_id"] not in moved_dirs and not dirpath.is_dir():
+                self._logger.debug(f"run {run['run_id']} is missing")
+                self._emit_trigger(
+                    "state_change",
+                    run["run_id"],
+                    run["path"],
+                    DirectoryState.MOVED,
+                    DirectoryType.RUN
+                )
 
     def _check_for_analysis(self):
         """

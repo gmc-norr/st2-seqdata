@@ -140,12 +140,75 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         # The directory does not exist, so it has been (re)moved
         self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
         self.assertTriggerDispatched(
             trigger="gmc_norr_seqdata.state_change",
             payload={
                 "run_id": "run1",
                 "path": str(Path(self.watch_directories[0].name) / "run1"),
                 "state": DirectoryState.MOVED,
+                "type": DirectoryType.RUN,
+            }
+        )
+
+    def test_moved_run_directory_within_watched_directory(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1_moved"
+        run_directory.mkdir()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        (run_directory / "CopyComplete.txt").touch()
+
+        self.cleve.add_run({
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{"state": "ready", "time": time.localtime()}],
+            "path": str(Path(self.watch_directories[0].name) / "run1"),
+        })
+
+        # The directory does not exist, so it has been (re)moved
+        self.sensor.poll()
+        # Ensure only a single state change trigger is emitted
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.state_change",
+            payload={
+                "run_id": "run1",
+                "path": str(Path(self.watch_directories[0].name) / "run1_moved"),
+                "state": DirectoryState.MOVED,
+                "type": DirectoryType.RUN,
+            }
+        )
+
+    def test_moved_run_directory_with_state_change(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1_moved"
+        run_directory.mkdir()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        (run_directory / "CopyComplete.txt").touch()
+
+        self.cleve.add_run({
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{"state": "new", "time": time.localtime()}],
+            "path": str(Path(self.watch_directories[0].name) / "run1"),
+        })
+
+        # Should emit two triggers since it has been moved, and at the same
+        # time the state has changed.
+        self.sensor.poll()
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.state_change",
+            payload={
+                "run_id": "run1",
+                "path": str(Path(self.watch_directories[0].name) / "run1_moved"),
+                "state": DirectoryState.MOVED,
+                "type": DirectoryType.RUN,
+            }
+        )
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.state_change",
+            payload={
+                "run_id": "run1",
+                "path": str(Path(self.watch_directories[0].name) / "run1_moved"),
+                "state": DirectoryState.READY,
                 "type": DirectoryType.RUN,
             }
         )
