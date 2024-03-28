@@ -1,47 +1,40 @@
-from io import StringIO
-import json
 import os
 from pathlib import Path
-import paramiko
-from paramiko.client import SSHClient, AutoAddPolicy
-import pwd
+import requests
 from st2reactor.sensor.base import PollingSensor
-import subprocess
-from typing import Dict, List, Union
+from typing import Dict, List, Optional
+import xml.etree.ElementTree as ET
+
+from cleve_service import Cleve
 
 
-class LocalHostClient:
-
-    def __init__(self, username):
-        self.hostname = "localhost"
-
-        if username is None:
-            self.user_uid = os.getuid()
-            self.user_gid = os.getgid()
-        else:
-            pw_record = pwd.getpwnam(username)
-            self.user_uid = pw_record.pw_uid
-            self.user_gid = pw_record.pw_gid
-
-    def exec_command(self, cmd):
-        if isinstance(cmd, str):
-            cmd = cmd.split()
-        p = subprocess.run(cmd, preexec_fn=self._preexec, encoding="utf-8",
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                           check=True)
-        return "", StringIO(p.stdout), StringIO(p.stderr)
-
-    def _preexec(self):
-        os.setgid(self.user_gid)
-        os.setuid(self.user_uid)
-
-    def close(self):
-        pass
+PLATFORMS = {
+    "NovaSeq": {
+        "serial_tag": "InstrumentSerialNumber",
+        "serial_pattern": "LH",
+        "ready_marker": "CopyComplete.txt",
+    },
+    "NextSeq": {
+        "serial_tag": "InstrumentId",
+        "serial_pattern": "NB",
+        "ready_marker": "CopyComplete.txt",
+    },
+    "MiSeq": {
+        "serial_tag": "ScannerID",
+        "serial_pattern": "M",
+        "ready_marker": "RTAComplete.txt",
+    },
+}
 
 
 class DirectoryState:
-    COPYCOMPLETE = "CopyComplete.txt"
+    NEW = "new"
+    READY = "ready"
+    ERROR = "error"
+    MOVED = "moved"
+    PENDING = "pending"
     UNDEFINED = "undefined"
+    INCOMPLETE = "incomplete"
 
 
 class DirectoryType:
@@ -50,151 +43,218 @@ class DirectoryType:
 
 
 class IlluminaDirectorySensor(PollingSensor):
-    _DATASTORE_KEY = "illumina_directories"
-    _dispatched_directories: List[Dict[str, str]]
 
     def __init__(self, sensor_service, config=None, poll_interval=60):
         super(IlluminaDirectorySensor, self).__init__(sensor_service, config, poll_interval)
         self._logger = self.sensor_service.get_logger(__name__)
-        self._watched_directories = self.config.get(self._DATASTORE_KEY, [])
-        self._directories = {}
+        self._watched_directories = self.config.get("illumina_directories", [])
+
+        if "cleve_service" in self.config:
+            # This is for testing purposes. In production, host
+            # and port should be used
+            self.cleve = self.config.get("cleve_service")
+        else:
+            self.cleve = Cleve(
+                self.config.get("cleve", {}).get("host"),
+                self.config.get("cleve", {}).get("port"),
+            )
 
         self._logger.debug("watched directories:")
         for wd in self._watched_directories:
             self._logger.debug(f"  - {wd}")
 
-        directories = self.sensor_service.get_value(self._DATASTORE_KEY)
-        if directories is not None:
-            for rd in json.loads(directories):
-                self._directories[f"{rd['host']}:{rd['path']}"] = rd
-
     def setup(self):
         pass
 
     def poll(self):
-        self._check_for_run()
-        self._check_for_analysis()
-        self._update_datastore()
+        """
+        Poll the file system for new run and analysis directories
+        as well as state changes of existing directories.
+        """
+        registered_rundirs = self.cleve.get_runs()
+        self._check_for_run(registered_rundirs)
 
-    def _check_for_run(self):
-        existing_directories = set()
+        runs = self.cleve.get_runs(platform="NovaSeq", state="ready")
+        self._logger.debug(f"found {len(runs)} ready NovaSeq runs")
+        for run_id, run in runs.items():
+            self._check_for_analysis(
+                run_id,
+                Path(run["path"]),
+                run.get("analysis", [])
+            )
 
-        # TODO: group watched directories by host and process each as a unit
 
+    def _check_for_run(self, registered_rundirs: Dict[str, Dict]) -> None:
+        """
+        Check for new run directories, or state changes of existing run
+        directories.
+
+        Emits triggers for new run directories, state changes of existing run
+        directories, and also incomplete run directories where essential
+        information is missing.
+
+        :param registered_rundirs: Existing run directories
+        :type registered_rundirs: dict
+        """
+        moved_dirs = set()
         for wd in self._watched_directories:
-            self._logger.debug(f"checking watch directory: {wd['path']}")
+            self._logger.debug(f"checking watch directory: {wd}")
 
-            host = wd.get("host", "localhost") or "localhost"
-            client = self._client(host)
+            root, dirnames, _ = next(os.walk(wd))
 
-            _, stdout, stderr = client.exec_command(
-                f"find {wd['path']} -maxdepth 1 -mindepth 1 -type d"
-            )
-
-            # Add new directories or update state of existing directories
-            for line in stdout:
-                directory_path = Path(line.strip())
-                directory_state = self.directory_state(directory_path, client)
-
-                payload = {
-                    "path": str(directory_path),
-                    "host": host,
-                    "type": DirectoryType.RUN,
-                }
-
-                existing_directories.add(f"{host}:{directory_path}")
-                existing_directory = self._find_directory(directory_path, host)
-                state_changed = False
-
-                if existing_directory is None:
-                    state_changed = True
-                    self._add_directory(directory_path, host, directory_state, DirectoryType.RUN)
-                    self.sensor_service.dispatch(
-                        trigger="gmc_norr_seqdata.new_directory",
-                        payload=payload
+            for dirname in dirnames:
+                dirpath = Path(root) / str(dirname)
+                self._logger.debug(f"looking at {dirpath}")
+                try:
+                    run_id = self.get_run_id(dirpath)
+                except IOError as e:
+                    self._logger.debug(f"incomplete run directory: {str(e)}")
+                    self._emit_trigger(
+                        "incomplete_directory",
+                        None,
+                        dirpath,
+                        DirectoryState.INCOMPLETE,
+                        DirectoryType.RUN,
+                        message=str(e),
                     )
+                    continue
+                except ET.ParseError as e:
+                    self._logger.debug(f"error parsing RunParameters.xml: {dirpath}")
+                    self._emit_trigger(
+                        "incomplete_directory",
+                        None,
+                        dirpath,
+                        DirectoryState.ERROR,
+                        DirectoryType.RUN,
+                        message=str(e)
+                    )
+                    continue
+                self._logger.debug(f"identified run as {run_id}")
+                if run_id in registered_rundirs:
+                    registered_path = registered_rundirs[run_id]["path"]
+                    if registered_path != str(dirpath):
+                        moved_dirs.add(run_id)
+                        self._logger.debug(f"{dirpath} moved from {registered_path}")
+                        self._emit_trigger("state_change", run_id, dirpath, DirectoryState.MOVED, DirectoryType.RUN)
+
+                    registered_state = registered_rundirs[run_id]["state_history"][0]["state"]
+                    current_state = self.run_directory_state(dirpath)
+
+                    if registered_state != current_state:
+                        self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
+                        self._emit_trigger("state_change", run_id, dirpath, current_state, DirectoryType.RUN)
                 else:
-                    state_changed = existing_directory["state"] != directory_state
-                    existing_directory["state"] = directory_state
+                    self._logger.debug(f"new directory found: {dirpath}")
+                    self._emit_trigger("new_directory", run_id, dirpath, self.run_directory_state(dirpath), DirectoryType.RUN)
+                    self._check_for_analysis(run_id, dirpath)
 
-                if state_changed:
-                    if directory_state == DirectoryState.COPYCOMPLETE:
-                        self.sensor_service.dispatch(
-                            trigger="gmc_norr_seqdata.copy_complete",
-                            payload=payload,
-                        )
-
-            for line in stderr:
-                self._logger.warning(f"stderr: {line}")
-
-            client.close()
-
-        # Remove directories that no longer exist
-        for k in set(self._directories.keys()) - existing_directories:
-            self._logger.debug(f"removing directory: {self._directories[k]}")
-            self._directories.pop(k)
-
-    def _check_for_analysis(self):
-        """
-        Check for an analysis directory inside run directories that are COPYCOMPLETE.
-        """
-        existing_directories = set()
-        run_directories = [rd for rd in self._directories.values() if rd["type"] == DirectoryType.RUN and rd["state"] == DirectoryState.COPYCOMPLETE]
-
-        for rd in run_directories:
-            if rd["type"] != DirectoryType.RUN or rd["state"] != DirectoryState.COPYCOMPLETE:
-                continue
-            self._logger.debug(f"checking for analysis directory in {rd['host']}{rd['path']}")
-
-            host = rd.get("host", "localhost") or "localhost"
-            client = self._client(host)
-
-            _, stdout, stderr = client.exec_command(
-                f"find {rd['path']} -maxdepth 1 -mindepth 1 -type d -name Analysis"
-            )
-
-            analysis_dir = stdout.read().strip()
-            if not analysis_dir:
-                continue
-
-            _, stdout, stderr = client.exec_command(
-                f"find {analysis_dir} -maxdepth 1 -mindepth 1 -type f -name CopyComplete.txt"
-            )
-
-            directory_state = self.directory_state(str(analysis_dir), client)
-
-            existing_directories.add(f"{host}:{analysis_dir}")
-            existing_directory = self._find_directory(str(analysis_dir), host)
-            state_changed = False
-
-            payload = {
-                "path": analysis_dir,
-                "host": host,
-                "type": DirectoryType.ANALYSIS,
-            }
-
-            if existing_directory is None:
-                state_changed = True
-                self._add_directory(analysis_dir, host, directory_state, DirectoryType.ANALYSIS)
-                self.sensor_service.dispatch(
-                    trigger="gmc_norr_seqdata.new_directory",
-                    payload=payload
+        # Check if existing runs have been moved out of the watched directories
+        for run in registered_rundirs.values():
+            dirpath = Path(run["path"])
+            if run["run_id"] not in moved_dirs and not dirpath.is_dir():
+                self._logger.debug(f"run {run['run_id']} is missing")
+                self._emit_trigger(
+                    "state_change",
+                    run["run_id"],
+                    run["path"],
+                    DirectoryState.MOVED,
+                    DirectoryType.RUN
                 )
+
+    def _check_for_analysis(self, run_id: str, path: Path, existing_analyses: Optional[List[Dict]] = None) -> None:
+        """
+        Check for an analysis directory inside NovaSeq run directories that
+        are ready.
+        """
+        analysis_path = Path(path) / "Analysis"
+        if not analysis_path.is_dir():
+            # There are no analysis directories to check
+            return
+
+        analyses = {}
+        for a in existing_analyses or []:
+            analyses[a["path"]] = a
+
+        root, analysis_dirs, _ = next(os.walk(analysis_path))
+
+        for analysis_dir in analysis_dirs:
+            dirpath = Path(root) / str(analysis_dir)
+            self._logger.debug(f"looking at analysis at {dirpath}")
+            if str(dirpath) in analyses:
+                self._logger.debug(f"analysis dir has been registered for run, checking state")
+                registered_state = analyses[str(dirpath)]["state"]
+                current_state = self.analysis_directory_state(dirpath)
+                if registered_state != current_state:
+                    self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
+                    self._emit_trigger("state_change", run_id, dirpath, current_state, DirectoryType.ANALYSIS)
             else:
-                state_changed = existing_directory["state"] != directory_state
-                existing_directory["state"] = directory_state
+                self._logger.debug(f"new analysis found: {dirpath}")
+                self._emit_trigger("new_directory", run_id, dirpath, self.analysis_directory_state(dirpath), DirectoryType.ANALYSIS)
 
-            if state_changed:
-                for line in stderr:
-                    self._logger.warning(f"stderr: {line}")
+    def _emit_trigger(self, trigger: str, run_id: Optional[str], path: Path, state: str, type: str, message: str = ""):
+        """
+        Emit a stackstorm trigger.
 
-                if directory_state == DirectoryState.COPYCOMPLETE:
-                    self.sensor_service.dispatch(
-                        trigger="gmc_norr_seqdata.copy_complete",
-                        payload=payload,
-                    )
+        :param trigger: The trigger name
+        :type trigger: str
+        :param run_id: The sequencing run ID
+        :type run_id: str
+        :param path: The path to the directory
+        :type path: pathlib.Path
+        :param state: The directory state
+        :type state: str
+        :param type: The directory type
+        :type type: str
+        :param message: An optional message
+        :type message: str
+        """
+        payload = {
+            "run_id": run_id,
+            "path": str(path),
+            "state": state,
+            "type": type,
+            "message": message,
+        }
+        self.sensor_service.dispatch(trigger=f"gmc_norr_seqdata.{trigger}", payload=payload)
 
-            client.close()
+    def get_run_id(self, path: Path) -> str:
+        """
+        Get the sequencing run ID from RunParameters.xml.
+
+        :param path: The path to the sequencing run directory
+        :type path: pathlib.Path
+        :raises ValueError: If the sequencing platform or run ID cannot be identified
+        :return: The run ID.
+        :rtype: str
+        """
+        self._logger.debug(f"looking for run id in {path}")
+        runparamsfile = path / "RunParameters.xml"
+        if not runparamsfile.is_file():
+            raise IOError(f"{runparamsfile} does not exist")
+        try:
+            tree = ET.parse(runparamsfile)
+        except ET.ParseError:
+            raise
+        root = tree.getroot()
+
+        for p, d in PLATFORMS.items():
+            serialelem = root.find(d["serial_tag"])
+            if serialelem is None:
+                continue
+            serial = str(serialelem.text)
+            platform = p
+            if not serial.startswith(d["serial_pattern"]):
+                raise ValueError(f"Serial number {serial} does not belong to {platform}")
+            break
+        else:
+            raise ValueError("Could not identify platform")
+
+        self._logger.debug(f"platform is {platform}")
+
+        run_id = root.find("RunId")
+        if run_id is None:
+            raise ValueError(f"RunId not found in {runparamsfile}")
+        return str(run_id.text)
 
     def cleanup(self):
         pass
@@ -208,60 +268,40 @@ class IlluminaDirectorySensor(PollingSensor):
     def remove_trigger(self, trigger):
         pass
 
-    def directory_state(self, path: Union[Path, str], client: Union[SSHClient, LocalHostClient]):
-        states = [
-            DirectoryState.COPYCOMPLETE,
-        ]
+    def run_directory_state(self, path: Path) -> str:
+        """
+        Get the state of a directory
 
-        for state in states:
-            _, stdout, _ = client.exec_command(
-                f"find {str(path)} -maxdepth 1 -mindepth 1 -type f -name {state}"
-            )
+        If a directory contains a RunParameters.xml file and a CopyComplete.txt
+        file, then the directory is ready for analysis.
 
-            if len(stdout.read()) > 0:
-                return state
+        If the directory only contains a RunParameters.xml file, processing on
+        the machine is not yet complete, so the directory is pending.
 
-        return DirectoryState.UNDEFINED
+        If the directory contains neither a RunParameters.xml file nor a
+        CopyComplete.txt file, then the directory is incomplete and will not
+        be added to the database.
 
-    def _client(self, hostname: str):
-        user = self.config.get("user")
-        keyfile = self.config.get("ssh_key")
+        :param path: The path to the run directory
+        :type path: pathlib.Path
+        :return: The state of the directory
+        :rtype: str
+        """
+        runparams = path / "RunParameters.xml"
+        copycomplete = path / "CopyComplete.txt"
 
-        self._logger.debug(f"connecting to {hostname} as {user}")
-
-        if hostname == "localhost":
-            client = LocalHostClient(user)
+        if runparams.is_file() and copycomplete.is_file():
+            return DirectoryState.READY
+        elif runparams.is_file() and not copycomplete.exists():
+            return DirectoryState.PENDING
+        elif not runparams.is_file():
+            return DirectoryState.INCOMPLETE
         else:
-            client = SSHClient()
-            client.set_missing_host_key_policy(AutoAddPolicy)
+            return DirectoryState.UNDEFINED
 
-            try:
-                client.connect(
-                    hostname=hostname,
-                    username=user,
-                    key_filename=keyfile,
-                )
-            except paramiko.ssh_exception.AuthenticationException as e:
-                self._logger.error(f"Authentication failed for {user}@{hostname}: {e}")
-                raise RuntimeError
-
-        return client
-
-    def _add_directory(self, directory: Path, host: str, state: str, type: str):
-        self._logger.debug(f"adding directory: {host}:{directory}")
-        self._directories[f"{host}:{str(directory)}"] = {
-            "path": str(directory),
-            "host": host,
-            "state": state,
-            "type": type,
-        }
-
-    def _find_directory(self, directory: Union[Path, str], host: str):
-        return self._directories.get(f"{host}:{str(directory)}", None)
-
-    def _update_datastore(self):
-        self._logger.debug("updating datastore with directories")
-        self.sensor_service.set_value(
-            self._DATASTORE_KEY,
-            json.dumps(list(self._directories.values()))
-        )
+    def analysis_directory_state(self, path: Path) -> str:
+        copycomplete = path / "CopyComplete.txt"
+        if copycomplete.is_file():
+            return DirectoryState.READY
+        else:
+            return DirectoryState.PENDING
