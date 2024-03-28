@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import requests
 from st2reactor.sensor.base import PollingSensor
-from typing import Dict
+from typing import Dict, Optional
 import xml.etree.ElementTree as ET
 
 from cleve_service import Cleve
@@ -101,6 +101,7 @@ class IlluminaDirectorySensor(PollingSensor):
                     self._logger.debug(f"incomplete run directory: {str(e)}")
                     self._emit_trigger(
                         "incomplete_directory",
+                        None,
                         dirpath,
                         DirectoryState.INCOMPLETE,
                         DirectoryType.RUN,
@@ -111,6 +112,7 @@ class IlluminaDirectorySensor(PollingSensor):
                     self._logger.debug(f"error parsing RunParameters.xml: {dirpath}")
                     self._emit_trigger(
                         "incomplete_directory",
+                        None,
                         dirpath,
                         DirectoryState.ERROR,
                         DirectoryType.RUN,
@@ -124,10 +126,10 @@ class IlluminaDirectorySensor(PollingSensor):
 
                     if registered_state != current_state:
                         self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
-                        self._emit_trigger("state_change", dirpath, current_state, DirectoryType.RUN)
+                        self._emit_trigger("state_change", run_id, dirpath, current_state, DirectoryType.RUN)
                 else:
                     self._logger.debug(f"new directory found: {dirpath}")
-                    self._emit_trigger("new_directory", dirpath, self.run_directory_state(dirpath), DirectoryType.RUN)
+                    self._emit_trigger("new_directory", run_id, dirpath, self.run_directory_state(dirpath), DirectoryType.RUN)
 
     def _check_for_analysis(self):
         """
@@ -158,17 +160,19 @@ class IlluminaDirectorySensor(PollingSensor):
                     current_state = self.analysis_directory_state(dirpath)
                     if registered_state != current_state:
                         self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
-                        self._emit_trigger("state_change", dirpath, current_state, DirectoryType.ANALYSIS)
+                        self._emit_trigger("state_change", run["run_id"], dirpath, current_state, DirectoryType.ANALYSIS)
                 else:
                     self._logger.debug(f"new analysis found: {dirpath}")
-                    self._emit_trigger("new_directory", dirpath, self.analysis_directory_state(dirpath), DirectoryType.ANALYSIS)
+                    self._emit_trigger("new_directory", run["run_id"], dirpath, self.analysis_directory_state(dirpath), DirectoryType.ANALYSIS)
 
-    def _emit_trigger(self, trigger: str, path: Path, state: str, type: str, message: str = ""):
+    def _emit_trigger(self, trigger: str, run_id: Optional[str], path: Path, state: str, type: str, message: str = ""):
         """
         Emit a stackstorm trigger.
 
         :param trigger: The trigger name
         :type trigger: str
+        :param run_id: The sequencing run ID
+        :type run_id: str
         :param path: The path to the directory
         :type path: pathlib.Path
         :param state: The directory state
@@ -179,6 +183,7 @@ class IlluminaDirectorySensor(PollingSensor):
         :type message: str
         """
         payload = {
+            "run_id": run_id,
             "path": str(path),
             "state": state,
             "type": type,

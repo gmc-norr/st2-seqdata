@@ -15,6 +15,9 @@ trigger_types:
     payload_schema:
       type: object
       properties:
+        run_id:
+          type: string
+          description: The ID of the run
         path:
           type: string
           description: The directory whose state has changed
@@ -36,6 +39,9 @@ trigger_types:
     payload_schema:
       type: object
       properties:
+        run_id:
+          type: string
+          description: The ID of the run
         path:
           type: string
           description: The path to the new directory
@@ -58,6 +64,9 @@ trigger_types:
     payload_schema:
       type: object
       properties:
+        run_id:
+          type: null
+          description: The ID of the run, which cannot be determined if it is incomplete
         path:
           type: string
           description: The path to the directory
