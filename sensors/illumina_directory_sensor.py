@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import requests
 from st2reactor.sensor.base import PollingSensor
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 import xml.etree.ElementTree as ET
 
 from cleve_service import Cleve
@@ -73,7 +73,16 @@ class IlluminaDirectorySensor(PollingSensor):
         """
         registered_rundirs = self.cleve.get_runs()
         self._check_for_run(registered_rundirs)
-        self._check_for_analysis()
+
+        runs = self.cleve.get_runs(platform="NovaSeq", state="ready")
+        self._logger.debug(f"found {len(runs)} ready NovaSeq runs")
+        for run_id, run in runs.items():
+            self._check_for_analysis(
+                run_id,
+                Path(run["path"]),
+                run.get("analysis", [])
+            )
+
 
     def _check_for_run(self, registered_rundirs: Dict[str, Dict]) -> None:
         """
@@ -137,6 +146,7 @@ class IlluminaDirectorySensor(PollingSensor):
                 else:
                     self._logger.debug(f"new directory found: {dirpath}")
                     self._emit_trigger("new_directory", run_id, dirpath, self.run_directory_state(dirpath), DirectoryType.RUN)
+                    self._check_for_analysis(run_id, dirpath)
 
         # Check if existing runs have been moved out of the watched directories
         for run in registered_rundirs.values():
@@ -151,39 +161,35 @@ class IlluminaDirectorySensor(PollingSensor):
                     DirectoryType.RUN
                 )
 
-    def _check_for_analysis(self):
+    def _check_for_analysis(self, run_id: str, path: Path, existing_analyses: Optional[List[Dict]] = None) -> None:
         """
         Check for an analysis directory inside NovaSeq run directories that
         are ready.
         """
-        runs = self.cleve.get_runs(platform="NovaSeq", state="ready")
+        analysis_path = Path(path) / "Analysis"
+        if not analysis_path.is_dir():
+            # There are no analysis directories to check
+            return
 
-        self._logger.debug(f"found {len(runs)} ready NovaSeq runs")
+        analyses = {}
+        for a in existing_analyses or []:
+            analyses[a["path"]] = a
 
-        for run in runs.values():
-            analysis_path = Path(run["path"]) / "Analysis"
-            if not analysis_path.is_dir():
-                # There are no analysis directories to check
-                continue
-            existing_analyses: Dict[str, Dict] = {}
-            for analysis in run.get("analysis", []):
-                existing_analyses[analysis["path"]] = analysis
+        root, analysis_dirs, _ = next(os.walk(analysis_path))
 
-            root, analysis_dirs, _ = next(os.walk(analysis_path))
-
-            for analysis_dir in analysis_dirs:
-                dirpath = Path(root) / str(analysis_dir)
-                self._logger.debug(f"looking at analysis at {dirpath}")
-                if str(dirpath) in existing_analyses:
-                    self._logger.debug(f"analysis dir has been registered for run, checking state")
-                    registered_state = existing_analyses[str(dirpath)]["state"]
-                    current_state = self.analysis_directory_state(dirpath)
-                    if registered_state != current_state:
-                        self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
-                        self._emit_trigger("state_change", run["run_id"], dirpath, current_state, DirectoryType.ANALYSIS)
-                else:
-                    self._logger.debug(f"new analysis found: {dirpath}")
-                    self._emit_trigger("new_directory", run["run_id"], dirpath, self.analysis_directory_state(dirpath), DirectoryType.ANALYSIS)
+        for analysis_dir in analysis_dirs:
+            dirpath = Path(root) / str(analysis_dir)
+            self._logger.debug(f"looking at analysis at {dirpath}")
+            if str(dirpath) in analyses:
+                self._logger.debug(f"analysis dir has been registered for run, checking state")
+                registered_state = analyses[str(dirpath)]["state"]
+                current_state = self.analysis_directory_state(dirpath)
+                if registered_state != current_state:
+                    self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
+                    self._emit_trigger("state_change", run_id, dirpath, current_state, DirectoryType.ANALYSIS)
+            else:
+                self._logger.debug(f"new analysis found: {dirpath}")
+                self._emit_trigger("new_directory", run_id, dirpath, self.analysis_directory_state(dirpath), DirectoryType.ANALYSIS)
 
     def _emit_trigger(self, trigger: str, run_id: Optional[str], path: Path, state: str, type: str, message: str = ""):
         """

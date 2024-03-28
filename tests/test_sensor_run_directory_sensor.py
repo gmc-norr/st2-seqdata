@@ -1,8 +1,5 @@
-import getpass
-import json
 from pathlib import Path
 from st2tests.base import BaseSensorTestCase
-import subprocess
 import tempfile
 import time
 
@@ -222,9 +219,9 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         analysis_directory = run_directory / "Analysis" / "1"
         analysis_directory.mkdir(parents=True)
 
-        # Should find a new run directory
+        # Should find a new run directory and a new analysis directory
         self.sensor.poll()
-        self.assertEqual(len(self.get_dispatched_triggers()), 1)
+        self.assertEqual(len(self.get_dispatched_triggers()), 2)
         self.assertTriggerDispatched(
             trigger="gmc_norr_seqdata.new_directory",
             payload={
@@ -232,6 +229,15 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "path": str(run_directory),
                 "state": DirectoryState.READY,
                 "type": DirectoryType.RUN,
+            }
+        )
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.new_directory",
+            payload={
+                "run_id": "run1",
+                "path": str(analysis_directory),
+                "state": DirectoryState.PENDING,
+                "type": DirectoryType.ANALYSIS,
             }
         )
 
@@ -247,18 +253,6 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             "analysis": [],
         })
 
-        # Should find a new analysis directory with pending state
-        self.sensor.poll()
-        self.assertTriggerDispatched(
-            trigger="gmc_norr_seqdata.new_directory",
-            payload={
-                "run_id": "run1",
-                "path": str(analysis_directory),
-                "state": DirectoryState.PENDING,
-                "type": DirectoryType.ANALYSIS,
-            }
-        )
-
         # Add analysis directory to database
         self.cleve.update_run(
             run_id="run1",
@@ -270,6 +264,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         (analysis_directory / "CopyComplete.txt").touch()
 
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 3)
         # Should find a state change of the analysis directory
         self.sensor.poll()
         self.assertTriggerDispatched(
@@ -278,6 +274,37 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(analysis_directory),
                 "state": DirectoryState.READY,
+                "type": DirectoryType.ANALYSIS,
+            }
+        )
+
+    def test_analysis_directory_at_the_same_time_as_run_ready(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+
+        analysis_directory = run_directory / "Analysis" / "1"
+        analysis_directory.mkdir(parents=True)
+
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 2)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.new_directory",
+            payload={
+                "run_id": "run1",
+                "path": str(run_directory),
+                "state": DirectoryState.READY,
+                "type": DirectoryType.RUN,
+            }
+        )
+
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.new_directory",
+            payload={
+                "run_id": "run1",
+                "path": str(analysis_directory),
+                "state": DirectoryState.PENDING,
                 "type": DirectoryType.ANALYSIS,
             }
         )
