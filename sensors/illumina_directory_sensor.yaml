@@ -65,8 +65,9 @@ trigger_types:
       type: object
       properties:
         run_id:
-          type: null
+          type: string
           description: The ID of the run, which cannot be determined if it is incomplete
+          const: null
         path:
           type: string
           description: The path to the directory
