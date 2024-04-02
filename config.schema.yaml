@@ -26,17 +26,3 @@ cleve:
     api_key:
       type: string
       required: true
-
-user:
-  description: >
-    The user to use for ssh connections
-  type: string
-  required: true
-  default: stanley
-
-ssh_key:
-  description: >
-    The ssh key to use for ssh connections
-  type: string
-  required: true
-  default: /home/stanley/.ssh/stanley_rsa
