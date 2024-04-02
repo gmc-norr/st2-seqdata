@@ -9,10 +9,13 @@ class CleveError(Exception):
 
 class Cleve:
 
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, key: Optional[str] = None):
         self.uri = f"http://{host}:{port}/api"
+        self.key = key
 
-    def get_runs(self, platform: Optional[str] = None, state: Optional[str] = None) -> Dict[str, Dict]:
+    def get_runs(self,
+                 platform: Optional[str] = None,
+                 state: Optional[str] = None) -> Dict[str, Dict]:
         uri = f"{self.uri}/runs?brief"
         if platform:
             uri += f"&platform={platform}"
@@ -22,12 +25,46 @@ class Cleve:
         r = requests.get(uri)
 
         if r.status_code != 200:
-            raise CleveError(f"failed to fetch runs from {self.uri}: HTTP {r.status_code}")
+            raise CleveError(
+                f"failed to fetch runs from {self.uri}: HTTP {r.status_code}")
 
         runs = {}
         for run in r.json():
             runs[run["run_id"]] = run
         return runs
+
+    def add_run(self, runparameters: str, path: str, state: str):
+        if self.key is None:
+            raise CleveError("no API key provided")
+
+        uri = f"{self.uri}/runs"
+        headers = {"Authorization": self.key}
+        files = [(
+            "runparameters", (
+                "RunParameters.xml",
+                open(runparameters, "rb"),
+                "application/xml",
+            ),
+        )]
+        payload = {
+            "path": path,
+            "state": state,
+        }
+
+        r = requests.post(
+            uri,
+            files=files,
+            data=payload,
+            headers=headers
+        )
+
+        print(r.json())
+
+        if r.status_code != 200:
+            raise CleveError(
+                f"failed to add run to {self.uri}: "
+                f"HTTP {r.status_code} {r.json()}"
+            )
 
 
 class CleveMock(Cleve):
@@ -41,7 +78,8 @@ class CleveMock(Cleve):
     def get_runs(self, platform: Optional[str] = None, state: Optional[str] = None) -> Dict[str, Dict]:
         runs = {}
         for run_id, run in self.runs.items():
-            last_state = sorted(run["state_history"], key=lambda x: x["time"], reverse=True)[0]["state"]
+            last_state = sorted(
+                run["state_history"], key=lambda x: x["time"], reverse=True)[0]["state"]
             if platform and run["platform"] != platform:
                 continue
             if state and last_state != state:
@@ -67,6 +105,7 @@ class CleveMock(Cleve):
             raise CleveError(f"run {run_id} not found")
 
         if state is not None:
-            self.runs[run_id]["state_history"].append({"state": state, "time": time.time()})
+            self.runs[run_id]["state_history"].append(
+                {"state": state, "time": time.time()})
         if analysis is not None:
             self.runs[run_id]["analysis"].append(analysis)
