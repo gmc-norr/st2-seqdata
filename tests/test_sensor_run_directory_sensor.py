@@ -104,7 +104,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         )
 
         # Add the run to the database
-        self.cleve.add_run({
+        self.cleve.add_run("supersecretapikey", {
             "run_id": "run1",
             "platform": "NovaSeq",
             "state_history": [{"state": "new", "time": time.localtime()}],
@@ -128,7 +128,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         self.assertEqual(len(self.get_dispatched_triggers()), 4)
 
     def test_moved_run_directory(self):
-        self.cleve.add_run({
+        self.cleve.add_run("supersecretapikey", {
             "run_id": "run1",
             "platform": "NovaSeq",
             "state_history": [{"state": "new", "time": time.localtime()}],
@@ -154,7 +154,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         self._write_basic_runparams(run_directory, "NovaSeq", "run1")
         (run_directory / "CopyComplete.txt").touch()
 
-        self.cleve.add_run({
+        self.cleve.add_run("supersecretapikey", {
             "run_id": "run1",
             "platform": "NovaSeq",
             "state_history": [{"state": "ready", "time": time.localtime()}],
@@ -181,7 +181,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         self._write_basic_runparams(run_directory, "NovaSeq", "run1")
         (run_directory / "CopyComplete.txt").touch()
 
-        self.cleve.add_run({
+        self.cleve.add_run("supersecretapikey", {
             "run_id": "run1",
             "platform": "NovaSeq",
             "state_history": [{"state": "new", "time": time.localtime()}],
@@ -242,7 +242,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         )
 
         # Add the run to the database
-        self.cleve.add_run({
+        self.cleve.add_run("supersecretapikey", {
             "run_id": "run1",
             "platform": "NovaSeq",
             "state_history": [{
@@ -255,6 +255,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         # Add analysis directory to database
         self.cleve.update_run(
+            key="supersecretapikey",
             run_id="run1",
             analysis={
                 "path": str(analysis_directory),

@@ -33,6 +33,7 @@ class Cleve:
 class CleveMock(Cleve):
 
     def __init__(self, runs: Optional[Dict[str, Dict]] = None):
+        self.key = "supersecretapikey"
         self.runs = {}
         if runs is not None:
             self.runs = runs
@@ -48,7 +49,9 @@ class CleveMock(Cleve):
             runs[run_id] = run
         return runs
 
-    def add_run(self, run: Dict):
+    def add_run(self, key: str, run: Dict):
+        if key != self.key:
+            raise CleveError("invalid API key")
         if "run_id" not in run:
             raise CleveError("run must have a run_id")
         if "state_history" not in run:
@@ -57,7 +60,9 @@ class CleveMock(Cleve):
             raise CleveError("run must have a platform")
         self.runs[run["run_id"]] = run
 
-    def update_run(self, run_id: str, state: Optional[str] = None, analysis: Optional[Dict] = None):
+    def update_run(self, key: str, run_id: str, state: Optional[str] = None, analysis: Optional[Dict] = None):
+        if key != self.key:
+            raise CleveError("invalid API key")
         if run_id not in self.runs:
             raise CleveError(f"run {run_id} not found")
 
