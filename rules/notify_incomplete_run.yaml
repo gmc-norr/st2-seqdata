@@ -1,0 +1,25 @@
+---
+name: notify_incomplete_run
+pack: gmc_norr_seqdata
+enabled: true
+
+trigger:
+  type: gmc_norr_seqdata.incomplete_directory
+
+criteria:
+  trigger.directory_type:
+    type: equals
+    pattern: run
+
+action:
+  ref: email.send_email
+  parameters:
+    email_from: Stackstorm
+    email_to: "niklas.mahler@regionvasterbotten.se"
+    subject: Incomplete sequencing run
+    body: |
+      A sequencing run directory is not complete and cannot be added to the database.
+
+      Path: {{ trigger.path }}
+      State: {{ trigger.state }}
+      Message: {{ trigger.message }}
