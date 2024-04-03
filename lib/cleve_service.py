@@ -67,6 +67,28 @@ class Cleve:
                 f"HTTP {r.status_code} {r.json()}"
             )
 
+    def update_run(self,
+                   run_id: str,
+                   state: str) -> None:
+        if self.key is None:
+            raise CleveError("no API key provided")
+
+        uri = f"{self.uri}/runs/{run_id}"
+        headers = {"Authorization": self.key}
+        payload = {
+            "state": state,
+        }
+
+        r = requests.patch(uri, data=payload, headers=headers)
+
+        print(r.json())
+
+        if r.status_code != 200:
+            raise CleveError(
+                f"failed to update run {run_id} in {self.uri}: "
+                f"HTTP {r.status_code} {r.json()}"
+            )
+
 
 class CleveMock(Cleve):
 

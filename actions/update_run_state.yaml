@@ -1,0 +1,18 @@
+---
+name: update_run_state
+runner_type: python-script
+description: Update the state of a run
+enabled: true
+entry_point: update_run_state.py
+
+parameters:
+  run_id:
+    type: string
+    description: The ID of the run
+    position: 0
+    required: true
+  state:
+    type: string
+    description: The state of the run
+    position: 1
+    required: true

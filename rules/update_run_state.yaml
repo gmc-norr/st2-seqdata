@@ -1,0 +1,18 @@
+---
+name: update_run_state
+pack: gmc_norr_seqdata
+enabled: true
+
+trigger:
+  type: gmc_norr_seqdata.state_change
+
+criteria:
+  trigger.directory_type:
+    type: equals
+    pattern: run
+
+action:
+  ref: gmc_norr_seqdata.update_run_state
+  parameters:
+    run_id: "{{ trigger.run_id }}"
+    state: "{{ trigger.state }}"
