@@ -16,13 +16,14 @@ class Cleve:
     def get_runs(self,
                  platform: Optional[str] = None,
                  state: Optional[str] = None) -> Dict[str, Dict]:
-        uri = f"{self.uri}/runs?brief"
-        if platform:
-            uri += f"&platform={platform}"
-        if state:
-            uri += f"&state={state}"
+        uri = f"{self.uri}/runs"
+        payload = {
+            "brief": True,
+            "platform": platform,
+            "state": state,
+        }
 
-        r = requests.get(uri)
+        r = requests.get(uri, data=payload)
 
         if r.status_code != 200:
             raise CleveError(
