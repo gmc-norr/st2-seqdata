@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-import requests
 from st2reactor.sensor.base import PollingSensor
 from typing import Dict, List, Optional
 import xml.etree.ElementTree as ET
@@ -111,10 +110,10 @@ class IlluminaDirectorySensor(PollingSensor):
                     self._logger.debug(f"incomplete run directory: {str(e)}")
                     self._emit_trigger(
                         "incomplete_directory",
-                        None,
-                        dirpath,
-                        DirectoryState.INCOMPLETE,
-                        DirectoryType.RUN,
+                        run_id=None,
+                        path=str(dirpath),
+                        state=DirectoryState.INCOMPLETE,
+                        directory_type=DirectoryType.RUN,
                         message=str(e),
                     )
                     continue
@@ -122,10 +121,10 @@ class IlluminaDirectorySensor(PollingSensor):
                     self._logger.debug(f"error parsing RunParameters.xml: {dirpath}")
                     self._emit_trigger(
                         "incomplete_directory",
-                        None,
-                        dirpath,
-                        DirectoryState.ERROR,
-                        DirectoryType.RUN,
+                        run_id=None,
+                        path=str(dirpath),
+                        state=DirectoryState.ERROR,
+                        directory_type=DirectoryType.RUN,
                         message=str(e)
                     )
                     continue
@@ -135,17 +134,33 @@ class IlluminaDirectorySensor(PollingSensor):
                     if registered_path != str(dirpath):
                         moved_dirs.add(run_id)
                         self._logger.debug(f"{dirpath} moved from {registered_path}")
-                        self._emit_trigger("state_change", run_id, dirpath, DirectoryState.MOVED, DirectoryType.RUN)
+                        self._emit_trigger(
+                            "state_change",
+                            run_id=run_id,
+                            path=str(dirpath),
+                            state=DirectoryState.MOVED,
+                            directory_type=DirectoryType.RUN)
 
                     registered_state = registered_rundirs[run_id]["state_history"][0]["state"]
                     current_state = self.run_directory_state(dirpath)
 
                     if registered_state != current_state:
                         self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
-                        self._emit_trigger("state_change", run_id, dirpath, current_state, DirectoryType.RUN)
+                        self._emit_trigger(
+                            "state_change",
+                            run_id=run_id,
+                            path=str(dirpath),
+                            state=current_state,
+                            directory_type=DirectoryType.RUN)
                 else:
                     self._logger.debug(f"new directory found: {dirpath}")
-                    self._emit_trigger("new_directory", run_id, dirpath, self.run_directory_state(dirpath), DirectoryType.RUN)
+                    self._emit_trigger(
+                        "new_directory",
+                        run_id=run_id,
+                        runparameters=str(dirpath / "RunParameters.xml"),
+                        path=str(dirpath),
+                        state=self.run_directory_state(dirpath),
+                        directory_type=DirectoryType.RUN)
                     self._check_for_analysis(run_id, dirpath)
 
         # Check if existing runs have been moved out of the watched directories
@@ -155,13 +170,17 @@ class IlluminaDirectorySensor(PollingSensor):
                 self._logger.debug(f"run {run['run_id']} is missing")
                 self._emit_trigger(
                     "state_change",
-                    run["run_id"],
-                    run["path"],
-                    DirectoryState.MOVED,
-                    DirectoryType.RUN
+                    run_id=run["run_id"],
+                    path=str(run["path"]),
+                    state=DirectoryState.MOVED,
+                    directory_type=DirectoryType.RUN
                 )
 
-    def _check_for_analysis(self, run_id: str, path: Path, existing_analyses: Optional[List[Dict]] = None) -> None:
+    def _check_for_analysis(
+            self,
+            run_id: str,
+            path: Path,
+            existing_analyses: Optional[List[Dict]] = None) -> None:
         """
         Check for an analysis directory inside NovaSeq run directories that
         are ready.
@@ -180,18 +199,45 @@ class IlluminaDirectorySensor(PollingSensor):
         for analysis_dir in analysis_dirs:
             dirpath = Path(root) / str(analysis_dir)
             self._logger.debug(f"looking at analysis at {dirpath}")
+            detailed_summary = list((dirpath / "Data" / "summary")
+                                    .glob("*/detailed_summary.json"))
+
+            if len(detailed_summary) == 0:
+                detailed_summary = None
+            else:
+                detailed_summary = detailed_summary[0]
+                self._logger.debug(
+                    f"found detailed summary at {detailed_summary}"
+                )
+
             if str(dirpath) in analyses:
-                self._logger.debug(f"analysis dir has been registered for run, checking state")
+                self._logger.debug(
+                    "analysis dir has been registered for run, checking state"
+                )
                 registered_state = analyses[str(dirpath)]["state"]
                 current_state = self.analysis_directory_state(dirpath)
                 if registered_state != current_state:
-                    self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
-                    self._emit_trigger("state_change", run_id, dirpath, current_state, DirectoryType.ANALYSIS)
+                    self._logger.debug(f"{dirpath} changed state "
+                                       f"from {registered_state} "
+                                       f"to {current_state}")
+                    self._emit_trigger(
+                        "state_change",
+                        run_id=run_id,
+                        path=str(dirpath),
+                        summary_file=str(detailed_summary) if detailed_summary else None,
+                        state=current_state,
+                        directory_type=DirectoryType.ANALYSIS)
             else:
                 self._logger.debug(f"new analysis found: {dirpath}")
-                self._emit_trigger("new_directory", run_id, dirpath, self.analysis_directory_state(dirpath), DirectoryType.ANALYSIS)
+                self._emit_trigger(
+                    "new_directory",
+                    run_id=run_id,
+                    summary_file=str(detailed_summary) if detailed_summary else None,
+                    path=str(dirpath),
+                    state=self.analysis_directory_state(dirpath),
+                    directory_type=DirectoryType.ANALYSIS)
 
-    def _emit_trigger(self, trigger: str, run_id: Optional[str], path: Path, state: str, type: str, message: str = ""):
+    def _emit_trigger(self, trigger: str, **kwargs) -> None:
         """
         Emit a stackstorm trigger.
 
@@ -208,14 +254,10 @@ class IlluminaDirectorySensor(PollingSensor):
         :param message: An optional message
         :type message: str
         """
-        payload = {
-            "run_id": run_id,
-            "path": str(path),
-            "state": state,
-            "type": type,
-            "message": message,
-        }
-        self.sensor_service.dispatch(trigger=f"gmc_norr_seqdata.{trigger}", payload=payload)
+        self.sensor_service.dispatch(
+            trigger=f"gmc_norr_seqdata.{trigger}",
+            payload=kwargs,
+        )
 
     def get_run_id(self, path: Path) -> str:
         """

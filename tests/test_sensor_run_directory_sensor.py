@@ -70,7 +70,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": None,
                 "path": str(run_dirs[0]),
                 "state": DirectoryState.INCOMPLETE,
-                "type": DirectoryType.RUN,
+                "directory_type": DirectoryType.RUN,
             }
         )
 
@@ -84,7 +84,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": None,
                 "path": str(run_dirs[0]),
                 "state": DirectoryState.ERROR,
-                "type": DirectoryType.RUN,
+                "directory_type": DirectoryType.RUN,
             }
         )
 
@@ -99,7 +99,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(run_dirs[0]),
                 "state": DirectoryState.PENDING,
-                "type": DirectoryType.RUN,
+                "directory_type": DirectoryType.RUN,
             }
         )
 
@@ -121,7 +121,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(run_dirs[0]),
                 "state": DirectoryState.READY,
-                "type": DirectoryType.RUN,
+                "directory_type": DirectoryType.RUN,
             }
         )
 
@@ -144,7 +144,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(Path(self.watch_directories[0].name) / "run1"),
                 "state": DirectoryState.MOVED,
-                "type": DirectoryType.RUN,
+                "directory_type": DirectoryType.RUN,
             }
         )
 
@@ -171,7 +171,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(Path(self.watch_directories[0].name) / "run1_moved"),
                 "state": DirectoryState.MOVED,
-                "type": DirectoryType.RUN,
+                "directory_type": DirectoryType.RUN,
             }
         )
 
@@ -197,7 +197,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(Path(self.watch_directories[0].name) / "run1_moved"),
                 "state": DirectoryState.MOVED,
-                "type": DirectoryType.RUN,
+                "directory_type": DirectoryType.RUN,
             }
         )
         self.assertTriggerDispatched(
@@ -206,7 +206,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(Path(self.watch_directories[0].name) / "run1_moved"),
                 "state": DirectoryState.READY,
-                "type": DirectoryType.RUN,
+                "directory_type": DirectoryType.RUN,
             }
         )
 
@@ -228,7 +228,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(run_directory),
                 "state": DirectoryState.READY,
-                "type": DirectoryType.RUN,
+                "directory_type": DirectoryType.RUN,
             }
         )
         self.assertTriggerDispatched(
@@ -237,7 +237,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(analysis_directory),
                 "state": DirectoryState.PENDING,
-                "type": DirectoryType.ANALYSIS,
+                "directory_type": DirectoryType.ANALYSIS,
             }
         )
 
@@ -275,7 +275,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(analysis_directory),
                 "state": DirectoryState.READY,
-                "type": DirectoryType.ANALYSIS,
+                "directory_type": DirectoryType.ANALYSIS,
             }
         )
 
@@ -296,7 +296,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(run_directory),
                 "state": DirectoryState.READY,
-                "type": DirectoryType.RUN,
+                "directory_type": DirectoryType.RUN,
             }
         )
 
@@ -306,6 +306,6 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(analysis_directory),
                 "state": DirectoryState.PENDING,
-                "type": DirectoryType.ANALYSIS,
+                "directory_type": DirectoryType.ANALYSIS,
             }
         )
