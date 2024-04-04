@@ -1,0 +1,10 @@
+---
+name: add_analysis.retry
+description: Retry adding an analysis directory on error
+enabled: true
+resource_ref: gmc_norr_seqdata.add_analysis
+policy_type: action.retry
+parameters:
+  retry_on: failure
+  max_retry_count: 1
+  delay: 5

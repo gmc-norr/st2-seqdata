@@ -17,4 +17,4 @@ action:
     run_id: "{{ trigger.run_id }}"
     path: "{{ trigger.path }}"
     state: "{{ trigger.state }}"
-    summary_file: "{{ trigger.summary_file }}"
+    summary_file: "{{ trigger.summary_file | use_none }}"
