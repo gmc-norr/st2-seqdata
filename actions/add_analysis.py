@@ -1,6 +1,6 @@
 from cleve_service import Cleve
 from st2common.runners.base_action import Action
-from typing import Optional
+from typing import Any, Dict, Optional
 
 
 class AddAnalysisAction(Action):
@@ -17,10 +17,10 @@ class AddAnalysisAction(Action):
             run_id: str,
             path: str,
             state: str,
-            summary_file: Optional[str]) -> None:
-        self.cleve.add_analysis(
-            run_id,
+            summary_file: Optional[str]) -> Dict[str, Any]:
+        return self.cleve.add_analysis(
+            run_id=run_id,
             path=path,
             state=state,
-            summary_file=summary_file
+            summary_file=summary_file,
         )

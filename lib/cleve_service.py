@@ -34,7 +34,10 @@ class Cleve:
             runs[run["run_id"]] = run
         return runs
 
-    def add_run(self, runparameters: str, path: str, state: str):
+    def add_run(self,
+                runparameters: str,
+                path: str,
+                state: str) -> Dict[str, Any]:
         if self.key is None:
             raise CleveError("no API key provided")
 
@@ -59,17 +62,17 @@ class Cleve:
             headers=headers
         )
 
-        print(r.json())
-
         if r.status_code != 200:
             raise CleveError(
                 f"failed to add run to {self.uri}: "
                 f"HTTP {r.status_code} {r.json()}"
             )
 
+        return r.json()
+
     def update_run(self,
                    run_id: str,
-                   state: str) -> None:
+                   state: str) -> Dict[str, Any]:
         if self.key is None:
             raise CleveError("no API key provided")
 
@@ -81,19 +84,19 @@ class Cleve:
 
         r = requests.patch(uri, data=payload, headers=headers)
 
-        print(r.json())
-
         if r.status_code != 200:
             raise CleveError(
                 f"failed to update run {run_id} in {self.uri}: "
                 f"HTTP {r.status_code} {r.json()}"
             )
 
+        return r.json()
+
     def add_analysis(self,
                      run_id: str,
                      path: str,
                      state: str,
-                     summary_file: Optional[str]) -> None:
+                     summary_file: Optional[str]) -> Dict[str, Any]:
         if self.key is None:
             raise CleveError("no API key provided")
 
@@ -116,19 +119,19 @@ class Cleve:
 
         r = requests.post(uri, files=files, headers=headers)
 
-        print(r.json())
-
         if r.status_code != 200:
             raise CleveError(
                 f"failed to add analysis for run {run_id}: "
                 f"HTTP {r.status_code} {r.json()}"
             )
 
+        return r.json()
+
     def update_analysis(self,
                         run_id: str,
                         analysis_id: str,
                         state: Optional[str],
-                        summary_file: Optional[str]) -> None:
+                        summary_file: Optional[str]) -> Dict[str, Any]:
         if self.key is None:
             raise CleveError("no API key provided")
 
@@ -154,13 +157,13 @@ class Cleve:
 
         r = requests.patch(uri, data=payload, files=files, headers=headers)
 
-        print(r.json())
-
         if r.status_code != 200:
             raise CleveError(
                 f"failed to update analysis for run {run_id} in {self.uri}: "
                 f"HTTP {r.status_code} {r.json()}"
             )
+
+        return r.json()
 
 
 class CleveMock(Cleve):

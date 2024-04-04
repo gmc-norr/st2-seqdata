@@ -1,5 +1,6 @@
 from cleve_service import Cleve
 from st2common.runners.base_action import Action
+from typing import Any, Dict
 
 
 class UpdateRunState(Action):
@@ -12,5 +13,8 @@ class UpdateRunState(Action):
             config.get("cleve").get("api_key"),
         )
 
-    def run(self, run_id: str, state: str) -> None:
-        self.cleve.update_run(run_id, state=state)
+    def run(self, run_id: str, state: str) -> Dict[str, Any]:
+        return self.cleve.update_run(
+            run_id=run_id,
+            state=state,
+        )

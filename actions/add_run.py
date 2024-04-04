@@ -1,5 +1,6 @@
 import cleve_service
 from st2common.runners.base_action import Action
+from typing import Any, Dict
 
 
 class AddRunAction(Action):
@@ -15,5 +16,9 @@ class AddRunAction(Action):
     def run(self,
             runparameters: str,
             path: str,
-            state: str) -> None:
-        self.cleve.add_run(runparameters, path, state)
+            state: str) -> Dict[str, Any]:
+        return self.cleve.add_run(
+            runparameters=runparameters,
+            path=path,
+            state=state,
+        )
