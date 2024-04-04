@@ -1,5 +1,6 @@
 ---
 name: add_analysis_directory
+description: Rule for adding an analysis directory to an exising NovaSeq run
 pack: gmc_norr_seqdata
 enabled: true
 

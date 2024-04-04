@@ -29,6 +29,14 @@ cleve:
 
 ## Rules
 
+ref | description
+--- | ---
+add_analysis_directory | Rule for adding an analysis directory to an exising NovaSeq run
+add_run_directory      | Rule for adding a new sequencing run directory
+notify_incomplete      | Rule for sending an email when an incomplete run directory is found
+update_analysis        | Rule for updating the state and summary for an existing analysis
+update_run_state       | Rule for updating the state of an existing sequencing run
+
 
 ## Sensors
 

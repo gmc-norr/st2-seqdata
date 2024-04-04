@@ -1,5 +1,6 @@
 ---
 name: add_run_directory
+description: Rule for adding a new sequencing run directory
 pack: gmc_norr_seqdata
 enabled: true
 

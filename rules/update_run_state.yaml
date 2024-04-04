@@ -1,5 +1,6 @@
 ---
 name: update_run_state
+description: Rule for updating the state of an existing sequencing run
 pack: gmc_norr_seqdata
 enabled: true
 
