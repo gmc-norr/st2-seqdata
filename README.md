@@ -26,6 +26,12 @@ cleve:
 
 ## Actions
 
+ref | description
+--- | ---
+add_analysis     | Add an analysis associated with a sequencing run
+add_run          | Add a sequencing run to the database
+update_analysis  | Update an analysis associated with a NovaSeq sequencing run
+update_run_state | Update the state of a run
 
 ## Rules
 
@@ -36,7 +42,6 @@ add_run_directory      | Rule for adding a new sequencing run directory
 notify_incomplete      | Rule for sending an email when an incomplete run directory is found
 update_analysis        | Rule for updating the state and summary for an existing analysis
 update_run_state       | Rule for updating the state of an existing sequencing run
-
 
 ## Sensors
 
