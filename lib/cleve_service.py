@@ -1,6 +1,6 @@
 import requests
 import time
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 
 class CleveError(Exception):
@@ -98,24 +98,23 @@ class Cleve:
             raise CleveError("no API key provided")
 
         uri = f"{self.uri}/runs/{run_id}/analysis"
-        headers = {"Authorization": self.key}
-
-        payload = {
-            "state": state,
-            "path": path,
+        headers = {
+            "Authorization": self.key,
         }
 
-        files = None
-        if summary_file is not None:
-            files = [(
-                "analysis_summary", (
-                    "detailed_summary.json",
-                    open(summary_file, "rb"),
-                    "application/json",
-                ),
-            )]
+        files: Dict[str, Any] = {
+            "state": (None, state),
+            "path": (None, path),
+        }
 
-        r = requests.post(uri, data=payload, files=files, headers=headers)
+        if summary_file is not None:
+            files["summary_file"] = (
+                "detailed_summary.json",
+                open(summary_file, "rb"),
+                "application/json",
+            )
+
+        r = requests.post(uri, files=files, headers=headers)
 
         print(r.json())
 
