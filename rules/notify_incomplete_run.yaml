@@ -15,11 +15,12 @@ criteria:
 action:
   ref: email.send_email
   parameters:
+    account: SMTP-VLL
     email_from: Stackstorm
-    email_to: "niklas.mahler@regionvasterbotten.se"
+    email_to: ["niklas.mahler@regionvasterbotten.se"]
     subject: Incomplete sequencing run
-    body: |
-      A sequencing run directory is not complete and cannot be added to the database.
+    message: |
+      A sequencing run directory is incomplete and cannot be added to the database.
 
       Path: {{ trigger.path }}
       State: {{ trigger.state }}

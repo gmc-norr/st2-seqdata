@@ -110,7 +110,6 @@ class IlluminaDirectorySensor(PollingSensor):
                     self._logger.debug(f"incomplete run directory: {str(e)}")
                     self._emit_trigger(
                         "incomplete_directory",
-                        run_id=None,
                         path=str(dirpath),
                         state=DirectoryState.INCOMPLETE,
                         directory_type=DirectoryType.RUN,
@@ -121,7 +120,6 @@ class IlluminaDirectorySensor(PollingSensor):
                     self._logger.debug(f"error parsing RunParameters.xml: {dirpath}")
                     self._emit_trigger(
                         "incomplete_directory",
-                        run_id=None,
                         path=str(dirpath),
                         state=DirectoryState.ERROR,
                         directory_type=DirectoryType.RUN,
