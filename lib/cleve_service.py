@@ -89,6 +89,80 @@ class Cleve:
                 f"HTTP {r.status_code} {r.json()}"
             )
 
+    def add_analysis(self,
+                     run_id: str,
+                     path: str,
+                     state: str,
+                     summary_file: Optional[str]) -> None:
+        if self.key is None:
+            raise CleveError("no API key provided")
+
+        uri = f"{self.uri}/runs/{run_id}/analysis"
+        headers = {"Authorization": self.key}
+
+        payload = {
+            "state": state,
+            "path": path,
+        }
+
+        files = None
+        if summary_file is not None:
+            files = [(
+                "analysis_summary", (
+                    "detailed_summary.json",
+                    open(summary_file, "rb"),
+                    "application/json",
+                ),
+            )]
+
+        r = requests.post(uri, data=payload, files=files, headers=headers)
+
+        print(r.json())
+
+        if r.status_code != 200:
+            raise CleveError(
+                f"failed to add analysis for run {run_id}: "
+                f"HTTP {r.status_code} {r.json()}"
+            )
+
+    def update_analysis(self,
+                        run_id: str,
+                        analysis_id: str,
+                        state: Optional[str],
+                        summary_file: Optional[str]) -> None:
+        if self.key is None:
+            raise CleveError("no API key provided")
+
+        uri = f"{self.uri}/runs/{run_id}/analysis/{analysis_id}"
+        headers = {"Authorization": self.key}
+
+        payload = None
+        files = None
+
+        if state is not None:
+            payload = {
+                "state": state,
+            }
+
+        if summary_file is not None:
+            files = [(
+                "analysis_summary", (
+                    "detailed_summary.json",
+                    open(summary_file, "rb"),
+                    "application/json",
+                ),
+            )]
+
+        r = requests.patch(uri, data=payload, files=files, headers=headers)
+
+        print(r.json())
+
+        if r.status_code != 200:
+            raise CleveError(
+                f"failed to update analysis for run {run_id} in {self.uri}: "
+                f"HTTP {r.status_code} {r.json()}"
+            )
+
 
 class CleveMock(Cleve):
 

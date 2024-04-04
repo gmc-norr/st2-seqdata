@@ -205,10 +205,12 @@ class IlluminaDirectorySensor(PollingSensor):
             if len(detailed_summary) == 0:
                 detailed_summary = None
             else:
-                detailed_summary = detailed_summary[0]
+                detailed_summary = str(detailed_summary[0])
                 self._logger.debug(
                     f"found detailed summary at {detailed_summary}"
                 )
+
+            analysis_id = dirpath.name
 
             if str(dirpath) in analyses:
                 self._logger.debug(
@@ -223,8 +225,8 @@ class IlluminaDirectorySensor(PollingSensor):
                     self._emit_trigger(
                         "state_change",
                         run_id=run_id,
-                        path=str(dirpath),
-                        summary_file=str(detailed_summary) if detailed_summary else None,
+                        analysis_id=analysis_id,
+                        summary_file=detailed_summary,
                         state=current_state,
                         directory_type=DirectoryType.ANALYSIS)
             else:
@@ -232,7 +234,7 @@ class IlluminaDirectorySensor(PollingSensor):
                 self._emit_trigger(
                     "new_directory",
                     run_id=run_id,
-                    summary_file=str(detailed_summary) if detailed_summary else None,
+                    summary_file=detailed_summary,
                     path=str(dirpath),
                     state=self.analysis_directory_state(dirpath),
                     directory_type=DirectoryType.ANALYSIS)

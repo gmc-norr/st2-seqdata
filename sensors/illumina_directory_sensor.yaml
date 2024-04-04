@@ -19,6 +19,12 @@ trigger_types:
           type: string
           description: The ID of the run
           required: true
+        analysis_id:
+          type: string
+          description: >
+            The ID of the analysis. Required if the state change is
+            associated with an analysis directory.
+          required: false
         path:
           type: string
           description: The directory whose state has changed

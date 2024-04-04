@@ -1,0 +1,28 @@
+---
+name: add_analysis
+runner_type: python-script
+description: Add an analysis associated with a sequencing run
+enabled: true
+entry_point: add_analysis.py
+
+parameters:
+  run_id:
+    type: string
+    description: The ID of the run
+    required: true
+    position: 0
+  path:
+    type: string
+    description: The path to the analysis directory
+    required: true
+    position: 1
+  state:
+    type: string
+    description: The state of the run
+    required: true
+    position: 2
+  summary_file:
+    type: string
+    description: The path to the summary JSON
+    required: true
+    position: 3

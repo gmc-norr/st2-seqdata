@@ -1,0 +1,23 @@
+---
+name: update_analysis
+runner_type: python-script
+description: Update an analysis associated with a NovaSeq sequencing run
+enabled: true
+entry_point: update_analysis.py
+parameters:
+  run_id:
+    type: string
+    description: The ID of the run
+    required: true
+  analysis_id:
+    type: string
+    description: The ID of the analysis to update
+    required: true
+  state:
+    type: string
+    description: The state of the run
+    required: false
+  summary_file:
+    type: string
+    description: The path to the summary JSON
+    required: false
