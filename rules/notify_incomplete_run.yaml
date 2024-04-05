@@ -16,7 +16,7 @@ action:
   ref: email.send_email
   parameters:
     account: SMTP-VLL
-    email_from: Stackstorm
+    email_from: stackstorm@regionvasterbotten.se
     email_to: "{{ trigger.email | to_json_string }}"
     subject: Incomplete sequencing run
     message: |
