@@ -1,0 +1,23 @@
+---
+name: add_run_directory
+description: Rule for adding a new sequencing run directory
+pack: gmc_norr_seqdata
+enabled: true
+
+trigger:
+  type: gmc_norr_seqdata.new_directory
+
+criteria:
+  trigger.directory_type:
+    type: equals
+    pattern: run
+  trigger.state:
+    type: inside
+    pattern: [new, ready, pending, complete]
+
+action:
+  ref: gmc_norr_seqdata.add_run
+  parameters:
+    runparameters: "{{ trigger.runparameters }}"
+    path: "{{ trigger.path }}"
+    state: "{{ trigger.state }}"

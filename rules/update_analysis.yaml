@@ -1,0 +1,21 @@
+---
+name: update_analysis
+description: Rule for updating the state and summary for an existing analysis
+pack: gmc_norr_seqdata
+enabled: true
+
+trigger:
+  type: gmc_norr_seqdata.state_change
+
+criteria:
+  trigger.directory_type:
+    type: equals
+    pattern: analysis
+
+action:
+  ref: gmc_norr_seqdata.update_analysis
+  parameters:
+    run_id: "{{ trigger.run_id }}"
+    path: "{{ trigger.path }}"
+    state: "{{ trigger.state }}"
+    summary_file: "{{ trigger.summary_file | use_none }}"

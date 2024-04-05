@@ -9,7 +9,7 @@ st2 pack config gmc_norr_seqdata
 
 ## Config
 
-The main config parameters that need to be set are `illumina_directories` and `cleve`. These should contain an array of paths to watch for new runs in and the [cleve](https://github.com/gmc-norr/cleve) configuration, respectively.
+The main config parameters that need to be set are `illumina_directories`, `notification_email` and `cleve`. These should contain an array of paths to watch for new runs in, an array of email addresses where notifications should be sent and the [cleve](https://github.com/gmc-norr/cleve) configuration, respectively.
 
 Example:
 
@@ -17,6 +17,9 @@ Example:
 illumina_directories:
     - /data/seqdata/novaseq
     - /data/seqdata/nextseq
+
+notification_email:
+  - me@email.com
 
 cleve:
   host: localhost
@@ -26,9 +29,22 @@ cleve:
 
 ## Actions
 
+ref | description
+--- | ---
+add_analysis     | Add an analysis associated with a sequencing run
+add_run          | Add a sequencing run to the database
+update_analysis  | Update an analysis associated with a NovaSeq sequencing run
+update_run_state | Update the state of a run
 
 ## Rules
 
+ref | description
+--- | ---
+add_analysis_directory | Rule for adding an analysis directory to an exising NovaSeq run
+add_run_directory      | Rule for adding a new sequencing run directory
+notify_incomplete      | Rule for sending an email when an incomplete run directory is found
+update_analysis        | Rule for updating the state and summary for an existing analysis
+update_run_state       | Rule for updating the state of an existing sequencing run
 
 ## Sensors
 

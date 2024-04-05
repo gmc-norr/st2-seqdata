@@ -1,0 +1,21 @@
+---
+name: add_analysis_directory
+description: Rule for adding an analysis directory to an exising NovaSeq run
+pack: gmc_norr_seqdata
+enabled: true
+
+trigger:
+  type: gmc_norr_seqdata.new_directory
+
+criteria:
+  trigger.directory_type:
+    type: equals
+    pattern: analysis
+
+action:
+  ref: gmc_norr_seqdata.add_analysis
+  parameters:
+    run_id: "{{ trigger.run_id }}"
+    path: "{{ trigger.path }}"
+    state: "{{ trigger.state }}"
+    summary_file: "{{ trigger.summary_file | use_none }}"

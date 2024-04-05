@@ -18,19 +18,36 @@ trigger_types:
         run_id:
           type: string
           description: The ID of the run
+          required: true
+        analysis_id:
+          type: string
+          description: >
+            The ID of the analysis. Required if the state change is
+            associated with an analysis directory.
+          required: false
         path:
           type: string
           description: The directory whose state has changed
+          required: true
+        summary_file:
+          type: string
+          description: >
+            Path to the detailed summary JSON for analysis directories. Needed
+            in order to fully update analysis info.
+          required: false
         state:
           type: string
           description: The state of the directory
+          required: true
         directory_type:
           type: string
           description: The type of directory
           enum: [run, analysis]
+          required: true
         message:
           type: string
           description: A message associated with the state change
+          required: false
 
   - name: new_directory
     pack: gmc_norr_seqdata
@@ -42,19 +59,35 @@ trigger_types:
         run_id:
           type: string
           description: The ID of the run
+          required: true
+        runparameters:
+          type: string
+          description: >
+            Path to the runparameters file. Needed for run directories.
+          required: false
+        summary_file:
+          type: string
+          description: >
+            Path to the detailed summary JSON for analysis directories. Needed
+            in order to fully add analysis info.
+          required: false
         path:
           type: string
           description: The path to the new directory
+          required: true
         state:
           type: string
           description: The state of the directory
+          required: true
         directory_type:
           type: string
           description: The type of directory
           enum: [run, analysis]
+          required: true
         message:
           type: string
           description: A message associated with the state change
+          required: false
 
   - name: incomplete_directory
     pack: gmc_norr_seqdata
@@ -68,17 +101,29 @@ trigger_types:
           type: string
           description: The ID of the run, which cannot be determined if it is incomplete
           const: null
+          required: false
         path:
           type: string
           description: The path to the directory
+          required: true
+        email:
+          type: array
+          description: An array of email addresses to send notifications to
+          required: true
+          default: []
+          items:
+            type: string
         state:
           type: string
           description: The state of the directory
           enum: [incomplete, error]
+          required: true
         directory_type:
           type: string
           description: The type of directory
           enum: [run, analysis]
+          required: true
         message:
           type: string
           description: A message describing why the directory is incomplete
+          required: false

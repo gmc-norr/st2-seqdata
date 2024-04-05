@@ -1,5 +1,4 @@
 ---
-# TODO: Make it possible to define what files triggers should be emitted for
 illumina_directories:
   description: >
     The directories in which to watch for new Illumina sequencing runs.
@@ -10,6 +9,17 @@ illumina_directories:
       The directory to watch for new run directories in.
     type: string
     required: true
+
+notification_email:
+  description: >
+    The email addresses to send notifications to.
+  type: array
+  required: true
+  default: []
+  items:
+    description: An email address
+    type: string
+    format: email
 
 cleve:
   description: >

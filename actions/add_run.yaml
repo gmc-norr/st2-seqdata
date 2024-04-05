@@ -1,0 +1,23 @@
+---
+name: add_run
+runner_type: python-script
+description: Add a sequencing run to the database
+enabled: true
+entry_point: add_run.py
+
+parameters:
+  path:
+    type: string
+    description: The path to the run directory
+    required: true
+    position: 0
+  state:
+    type: string
+    description: The detected state of the directory
+    required: true
+    position: 1
+  runparameters:
+    type: string
+    description: Path to the runparameters file
+    required: true
+    position: 2
