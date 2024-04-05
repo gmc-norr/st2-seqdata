@@ -1,5 +1,7 @@
+from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
+import requests
 from st2reactor.sensor.base import PollingSensor
 from typing import Dict, List, Optional
 import xml.etree.ElementTree as ET
@@ -82,6 +84,47 @@ class IlluminaDirectorySensor(PollingSensor):
                 run.get("analysis", [])
             )
 
+    def _find_incomplete_directory_trigger(self,
+                                           payload: Dict) -> Optional[str]:
+        """
+        Find an incomplete_directory trigger instance with the same
+        payload that is less than one week old.
+        """
+        timeformat = "%Y-%m-%dT%H:%M:%S.%fZ"
+        one_week_old = (datetime.now(timezone.utc) - timedelta(days=7))
+
+        client = self.sensor_service.datastore_service.get_api_client()
+        instances = client.triggerinstances.query(
+            trigger="gmc_norr_seqdata.incomplete_directory",
+            timestamp_gt=one_week_old.strftime(timeformat),
+        )
+        for instance in instances:
+            if instance.payload == payload:
+                return instance.id
+
+        return None
+
+    def _handle_incomplete_directory(self,
+                                     rundir: Path,
+                                     message: str = "") -> None:
+        self._logger.debug(f"incomplete run directory: {rundir}")
+        self._logger.debug(f"reason: {message}")
+        payload = dict(
+            path=str(rundir),
+            state=DirectoryState.INCOMPLETE,
+            directory_type=DirectoryType.RUN,
+            message=message,
+        )
+        t = self._find_incomplete_directory_trigger(payload)
+        if t is None:
+            self._emit_trigger(
+                "incomplete_directory",
+                **payload,
+            )
+        else:
+            self._logger.debug("trigger instance with the same "
+                               "payload found within the last week, "
+                               "won't emit new trigger")
 
     def _check_for_run(self, registered_rundirs: Dict[str, Dict]) -> None:
         """
@@ -107,24 +150,10 @@ class IlluminaDirectorySensor(PollingSensor):
                 try:
                     run_id = self.get_run_id(dirpath)
                 except IOError as e:
-                    self._logger.debug(f"incomplete run directory: {str(e)}")
-                    self._emit_trigger(
-                        "incomplete_directory",
-                        path=str(dirpath),
-                        state=DirectoryState.INCOMPLETE,
-                        directory_type=DirectoryType.RUN,
-                        message=str(e),
-                    )
+                    self._handle_incomplete_directory(dirpath, str(e))
                     continue
                 except ET.ParseError as e:
-                    self._logger.debug(f"error parsing RunParameters.xml: {dirpath}")
-                    self._emit_trigger(
-                        "incomplete_directory",
-                        path=str(dirpath),
-                        state=DirectoryState.ERROR,
-                        directory_type=DirectoryType.RUN,
-                        message=str(e)
-                    )
+                    self._handle_incomplete_directory(dirpath, str(e))
                     continue
                 self._logger.debug(f"identified run as {run_id}")
                 if run_id in registered_rundirs:
