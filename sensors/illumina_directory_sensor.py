@@ -109,11 +109,17 @@ class IlluminaDirectorySensor(PollingSensor):
                                      message: str = "") -> None:
         self._logger.debug(f"incomplete run directory: {rundir}")
         self._logger.debug(f"reason: {message}")
+        email = self.config.get("notification_email", [])
+        if not email:
+            self._logger.info("no email addresses provided, "
+                              "no trigger dispatched")
+            return
         payload = dict(
             path=str(rundir),
             state=DirectoryState.INCOMPLETE,
             directory_type=DirectoryType.RUN,
             message=message,
+            email=self.config.get("notification_email", []),
         )
         t = self._find_incomplete_directory_trigger(payload)
         if t is None:

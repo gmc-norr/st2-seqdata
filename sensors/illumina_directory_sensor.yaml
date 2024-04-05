@@ -106,6 +106,13 @@ trigger_types:
           type: string
           description: The path to the directory
           required: true
+        email:
+          type: array
+          description: An array of email addresses to send notifications to
+          required: true
+          default: []
+          items:
+            type: string
         state:
           type: string
           description: The state of the directory
