@@ -14,11 +14,12 @@ class Cleve:
         self.key = key
 
     def get_runs(self,
+                 brief=True,
                  platform: Optional[str] = None,
                  state: Optional[str] = None) -> Dict[str, Dict]:
         uri = f"{self.uri}/runs"
         payload = {
-            "brief": True,
+            "brief": brief,
             "platform": platform,
             "state": state,
         }
