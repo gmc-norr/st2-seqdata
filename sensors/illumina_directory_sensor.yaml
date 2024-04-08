@@ -5,8 +5,8 @@ description: >
   Sensor that emits triggers for seqencing run directories that are direct
   children of a specific directory, as well as any analysis directories that
   are found in those run directories.
-poll_interval: 60
-enabled: false
+poll_interval: 300
+enabled: true
 trigger_types:
   - name: state_change
     pack: gmc_norr_seqdata
