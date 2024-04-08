@@ -78,12 +78,14 @@ class Cleve:
             raise CleveError("no API key provided")
 
         uri = f"{self.uri}/runs/{run_id}"
-        headers = {"Authorization": self.key}
+        headers = {
+            "Authorization": self.key,
+        }
         payload = {
             "state": state,
         }
 
-        r = requests.patch(uri, data=payload, headers=headers)
+        r = requests.patch(uri, json=payload, headers=headers)
 
         if r.status_code != 200:
             raise CleveError(
