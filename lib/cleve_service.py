@@ -28,7 +28,7 @@ class Cleve:
 
         if r.status_code != 200:
             raise CleveError(
-                f"failed to fetch runs from {self.uri}: HTTP {r.status_code}")
+                f"failed to fetch runs from {uri}: HTTP {r.status_code}")
 
         runs = {}
         for run in r.json():
@@ -65,7 +65,7 @@ class Cleve:
 
         if r.status_code != 200:
             raise CleveError(
-                f"failed to add run to {self.uri}: "
+                f"failed to add run to {uri}: "
                 f"HTTP {r.status_code} {r.json()}"
             )
 
@@ -89,7 +89,7 @@ class Cleve:
 
         if r.status_code != 200:
             raise CleveError(
-                f"failed to update run {run_id} in {self.uri}: "
+                f"failed to update run {run_id} in {uri}: "
                 f"HTTP {r.status_code} {r.json()}"
             )
 
@@ -162,7 +162,7 @@ class Cleve:
 
         if r.status_code != 200:
             raise CleveError(
-                f"failed to update analysis for run {run_id} in {self.uri}: "
+                f"failed to update analysis for run {run_id} in {uri}: "
                 f"HTTP {r.status_code} {r.json()}"
             )
 
