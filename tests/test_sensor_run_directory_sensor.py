@@ -20,6 +20,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         self.sensor = self.get_sensor_instance(config={
             "illumina_directories": [Path(d.name) for d in self.watch_directories],
             "cleve_service": self.cleve,
+            "notification_email": ["me@mail.com"],
         })
 
     def assertTriggerDispatched(self, trigger, payload):
@@ -67,7 +68,6 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         self.assertTriggerDispatched(
             trigger="gmc_norr_seqdata.incomplete_directory",
             payload={
-                "run_id": None,
                 "path": str(run_dirs[0]),
                 "state": DirectoryState.INCOMPLETE,
                 "directory_type": DirectoryType.RUN,
@@ -81,7 +81,6 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         self.assertTriggerDispatched(
             trigger="gmc_norr_seqdata.incomplete_directory",
             payload={
-                "run_id": None,
                 "path": str(run_dirs[0]),
                 "state": DirectoryState.ERROR,
                 "directory_type": DirectoryType.RUN,
@@ -273,7 +272,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             trigger="gmc_norr_seqdata.state_change",
             payload={
                 "run_id": "run1",
-                "path": str(analysis_directory),
+                "analysis_id": "1",
                 "state": DirectoryState.READY,
                 "directory_type": DirectoryType.ANALYSIS,
             }

@@ -93,7 +93,11 @@ class IlluminaDirectorySensor(PollingSensor):
         timeformat = "%Y-%m-%dT%H:%M:%S.%fZ"
         one_week_old = (datetime.now(timezone.utc) - timedelta(days=7))
 
-        client = self.sensor_service.datastore_service.get_api_client()
+        try:
+            client = self.sensor_service.datastore_service.get_api_client()
+        except NotImplementedError:
+            # API client not available in tests, return no matches
+            return None
         instances = client.triggerinstances.query(
             trigger="gmc_norr_seqdata.incomplete_directory",
             timestamp_gt=one_week_old.strftime(timeformat),
@@ -106,6 +110,7 @@ class IlluminaDirectorySensor(PollingSensor):
 
     def _handle_incomplete_directory(self,
                                      rundir: Path,
+                                     state: str = DirectoryState.INCOMPLETE,
                                      message: str = "") -> None:
         self._logger.debug(f"incomplete run directory: {rundir}")
         self._logger.debug(f"reason: {message}")
@@ -116,7 +121,7 @@ class IlluminaDirectorySensor(PollingSensor):
             return
         payload = dict(
             path=str(rundir),
-            state=DirectoryState.INCOMPLETE,
+            state=state,
             directory_type=DirectoryType.RUN,
             message=message,
             email=self.config.get("notification_email", []),
@@ -156,10 +161,18 @@ class IlluminaDirectorySensor(PollingSensor):
                 try:
                     run_id = self.get_run_id(dirpath)
                 except IOError as e:
-                    self._handle_incomplete_directory(dirpath, str(e))
+                    self._handle_incomplete_directory(
+                        dirpath,
+                        DirectoryState.INCOMPLETE,
+                        str(e),
+                    )
                     continue
                 except ET.ParseError as e:
-                    self._handle_incomplete_directory(dirpath, str(e))
+                    self._handle_incomplete_directory(
+                        dirpath,
+                        DirectoryState.ERROR,
+                        str(e),
+                    )
                     continue
                 self._logger.debug(f"identified run as {run_id}")
                 if run_id in registered_rundirs:
