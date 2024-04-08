@@ -14,11 +14,12 @@ class Cleve:
         self.key = key
 
     def get_runs(self,
+                 brief=True,
                  platform: Optional[str] = None,
                  state: Optional[str] = None) -> Dict[str, Dict]:
         uri = f"{self.uri}/runs"
         payload = {
-            "brief": True,
+            "brief": brief,
             "platform": platform,
             "state": state,
         }
@@ -27,7 +28,7 @@ class Cleve:
 
         if r.status_code != 200:
             raise CleveError(
-                f"failed to fetch runs from {self.uri}: HTTP {r.status_code}")
+                f"failed to fetch runs from {uri}: HTTP {r.status_code}")
 
         runs = {}
         for run in r.json():
@@ -64,7 +65,7 @@ class Cleve:
 
         if r.status_code != 200:
             raise CleveError(
-                f"failed to add run to {self.uri}: "
+                f"failed to add run to {uri}: "
                 f"HTTP {r.status_code} {r.json()}"
             )
 
@@ -77,16 +78,18 @@ class Cleve:
             raise CleveError("no API key provided")
 
         uri = f"{self.uri}/runs/{run_id}"
-        headers = {"Authorization": self.key}
+        headers = {
+            "Authorization": self.key,
+        }
         payload = {
             "state": state,
         }
 
-        r = requests.patch(uri, data=payload, headers=headers)
+        r = requests.patch(uri, json=payload, headers=headers)
 
         if r.status_code != 200:
             raise CleveError(
-                f"failed to update run {run_id} in {self.uri}: "
+                f"failed to update run {run_id} in {uri}: "
                 f"HTTP {r.status_code} {r.json()}"
             )
 
@@ -159,7 +162,7 @@ class Cleve:
 
         if r.status_code != 200:
             raise CleveError(
-                f"failed to update analysis for run {run_id} in {self.uri}: "
+                f"failed to update analysis for run {run_id} in {uri}: "
                 f"HTTP {r.status_code} {r.json()}"
             )
 

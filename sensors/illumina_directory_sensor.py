@@ -72,10 +72,10 @@ class IlluminaDirectorySensor(PollingSensor):
         Poll the file system for new run and analysis directories
         as well as state changes of existing directories.
         """
-        registered_rundirs = self.cleve.get_runs()
+        registered_rundirs = self.cleve.get_runs(brief=True)
         self._check_for_run(registered_rundirs)
 
-        runs = self.cleve.get_runs(platform="NovaSeq", state="ready")
+        runs = self.cleve.get_runs(brief=False, platform="NovaSeq", state="ready")
         self._logger.debug(f"found {len(runs)} ready NovaSeq runs")
         for run_id, run in runs.items():
             self._check_for_analysis(
