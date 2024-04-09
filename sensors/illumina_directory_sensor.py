@@ -174,6 +174,13 @@ class IlluminaDirectorySensor(PollingSensor):
                         str(e),
                     )
                     continue
+                except ValueError as e:
+                    self._handle_incomplete_directory(
+                        dirpath,
+                        DirectoryState.ERROR,
+                        str(e),
+                    )
+                    continue
                 self._logger.debug(f"identified run as {run_id}")
                 if run_id in registered_rundirs:
                     registered_path = registered_rundirs[run_id]["path"]

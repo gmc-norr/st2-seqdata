@@ -2,7 +2,7 @@
 name: notify_incomplete_run
 description: Rule for sending an email when an incomplete run directory is found
 pack: gmc_norr_seqdata
-enabled: true
+enabled: false
 
 trigger:
   type: gmc_norr_seqdata.incomplete_directory
