@@ -320,6 +320,8 @@ class IlluminaDirectorySensor(PollingSensor):
 
         :param path: The path to the sequencing run directory
         :type path: pathlib.Path
+        :raises IOError: If the RunParameters.xml file cannot be found
+        :raises ET.ParseError: If the RunParameters.xml file cannot be parsed
         :raises ValueError: If the sequencing platform or run ID cannot be identified
         :return: The run ID.
         :rtype: str
