@@ -350,7 +350,7 @@ class IlluminaDirectorySensor(PollingSensor):
 
         self._logger.debug(f"platform is {platform}")
 
-        run_id = root.find("RunId")
+        run_id = root.find("RunId") or root.find("RunID")
         if run_id is None:
             raise ValueError(f"RunId not found in {runparamsfile}")
         return str(run_id.text)
