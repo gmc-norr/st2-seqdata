@@ -16,7 +16,7 @@ PLATFORMS = {
         "ready_marker": "CopyComplete.txt",
     },
     "NextSeq": {
-        "serial_tag": "InstrumentId",
+        "serial_tag": "InstrumentID",
         "serial_pattern": "NB",
         "ready_marker": "CopyComplete.txt",
     },
