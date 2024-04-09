@@ -16,7 +16,7 @@ PLATFORMS = {
         "ready_marker": "CopyComplete.txt",
     },
     "NextSeq": {
-        "serial_tag": "InstrumentId",
+        "serial_tag": "InstrumentID",
         "serial_pattern": "NB",
         "ready_marker": "CopyComplete.txt",
     },
@@ -174,6 +174,13 @@ class IlluminaDirectorySensor(PollingSensor):
                         str(e),
                     )
                     continue
+                except ValueError as e:
+                    self._handle_incomplete_directory(
+                        dirpath,
+                        DirectoryState.ERROR,
+                        str(e),
+                    )
+                    continue
                 self._logger.debug(f"identified run as {run_id}")
                 if run_id in registered_rundirs:
                     registered_path = registered_rundirs[run_id]["path"]
@@ -313,6 +320,8 @@ class IlluminaDirectorySensor(PollingSensor):
 
         :param path: The path to the sequencing run directory
         :type path: pathlib.Path
+        :raises IOError: If the RunParameters.xml file cannot be found
+        :raises ET.ParseError: If the RunParameters.xml file cannot be parsed
         :raises ValueError: If the sequencing platform or run ID cannot be identified
         :return: The run ID.
         :rtype: str
@@ -341,7 +350,7 @@ class IlluminaDirectorySensor(PollingSensor):
 
         self._logger.debug(f"platform is {platform}")
 
-        run_id = root.find("RunId")
+        run_id = root.find("RunId") or root.find("RunID")
         if run_id is None:
             raise ValueError(f"RunId not found in {runparamsfile}")
         return str(run_id.text)
