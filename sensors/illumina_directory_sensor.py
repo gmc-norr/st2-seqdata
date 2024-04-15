@@ -218,6 +218,10 @@ class IlluminaDirectorySensor(PollingSensor):
 
         # Check if existing runs have been moved out of the watched directories
         for run in registered_rundirs.values():
+            # Don't emit a trigger if the state already is moved
+            state = run["state_history"][0]["state"]
+            if state == DirectoryState.MOVED:
+                continue
             dirpath = Path(run["path"])
             if run["run_id"] not in moved_dirs and not dirpath.is_dir():
                 self._logger.debug(f"run {run['run_id']} is missing")
