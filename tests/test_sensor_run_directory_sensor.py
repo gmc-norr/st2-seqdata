@@ -53,7 +53,11 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         filtered_runs = {}
         for run_id, r in self.cleve.runs.items():
             platform_match = not platform or r["platform"] == platform
-            state_match = not state or r["state_history"][0]["state"] == state
+            state_history = r.get("state_history", [])
+            past_state = None
+            if state_history:
+                past_state = state_history[0]["state"]
+            state_match = not state or past_state == state
             if platform_match and state_match:
                 filtered_runs[run_id] = r.copy()
             if brief:
@@ -281,6 +285,43 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             payload={
                 "run_id": "run1",
                 "path": str(Path(self.watch_directories[0].name) / "run1_moved"),
+                "state": DirectoryState.READY,
+                "directory_type": DirectoryType.RUN,
+            }
+        )
+
+    def test_update_empty_state(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.new_directory",
+            payload={
+                "run_id": "run1",
+                "path": str(run_directory),
+                "state": DirectoryState.READY,
+                "directory_type": DirectoryType.RUN,
+            }
+        )
+
+        self.cleve.add_run("run1", {
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state": DirectoryState.READY,
+            "path": str(Path(self.watch_directories[0].name) / "run1"),
+        })
+        self.cleve.runs["run1"]["state_history"] = []
+
+        self.sensor.poll()
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.state_change",
+            payload={
+                "run_id": "run1",
+                "path": str(run_directory),
                 "state": DirectoryState.READY,
                 "directory_type": DirectoryType.RUN,
             }
