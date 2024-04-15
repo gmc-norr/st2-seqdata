@@ -2,9 +2,12 @@ from pathlib import Path
 from st2tests.base import BaseSensorTestCase
 import tempfile
 import time
+from typing import Any, Dict, Optional
+from unittest.mock import Mock
 
 from illumina_directory_sensor import IlluminaDirectorySensor, DirectoryState, DirectoryType, PLATFORMS
-from cleve_service import CleveMock
+from cleve_service import Cleve
+
 
 class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
     sensor_cls = IlluminaDirectorySensor
@@ -16,12 +19,65 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             tempfile.TemporaryDirectory(),
             tempfile.TemporaryDirectory(),
         ]
-        self.cleve = CleveMock()
+
+        # Mock the cleve service
+        self.cleve = Cleve(key="supersecretapikey")
+        self.cleve.runs = {}
+        self.cleve.get_runs = Mock(
+            side_effect=self._get_runs
+        )
+        self.cleve.add_run = Mock(
+            side_effect=self._add_run
+        )
+        self.cleve.add_analysis = Mock(
+            side_effect=self._add_analysis
+        )
+        self.cleve.update_analysis = Mock(
+            side_effect=self._update_analysis
+        )
+
         self.sensor = self.get_sensor_instance(config={
             "illumina_directories": [Path(d.name) for d in self.watch_directories],
             "cleve_service": self.cleve,
             "notification_email": ["me@mail.com"],
         })
+
+    def _get_runs(
+            self,
+            brief: bool = False,
+            platform: Optional[str] = None,
+            state: Optional[str] = None) -> Dict[str, Dict]:
+        filtered_runs = {}
+        for run_id, r in self.cleve.runs.items():
+            platform_match = not platform or r["platform"] == platform
+            state_match = not state or r["state_history"][0]["state"] == state
+            if platform_match and state_match:
+                filtered_runs[run_id] = r.copy()
+            if brief:
+                if "runparameters" in filtered_runs[run_id]:
+                    del filtered_runs[run_id]["runparameters"]
+                if "analysis" in filtered_runs[run_id]:
+                    del filtered_runs[run_id]["analysis"]
+        return filtered_runs
+
+    def _add_run(self, run_id: str, run: Dict[str, Any]):
+        self.cleve.runs[run_id] = run
+
+    def _add_analysis(self, run_id: str, analysis: Dict[str, Any]):
+        self.cleve.runs[run_id]["analysis"].append(analysis)
+
+    def _update_analysis(
+            self,
+            run_id: str,
+            analysis_id: str,
+            state: Optional[str] = None,
+            summary: Optional[Dict[str, Any]] = None):
+        for a in self.cleve.runs[run_id]["analysis"]:
+            if a["analysis_id"] == analysis_id:
+                if state is not None:
+                    a["state"] = state
+                if summary is not None:
+                    a["summary"] = summary
 
     def assertTriggerDispatched(self, trigger, payload):
         """
@@ -103,7 +159,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         )
 
         # Add the run to the database
-        self.cleve.add_run("supersecretapikey", {
+        self.cleve.add_run("run1", {
             "run_id": "run1",
             "platform": "NovaSeq",
             "state_history": [{"state": "new", "time": time.localtime()}],
@@ -127,12 +183,15 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         self.assertEqual(len(self.get_dispatched_triggers()), 4)
 
     def test_moved_run_directory(self):
-        self.cleve.add_run("supersecretapikey", {
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run = {
             "run_id": "run1",
             "platform": "NovaSeq",
             "state_history": [{"state": "new", "time": time.localtime()}],
-            "path": str(Path(self.watch_directories[0].name) / "run1"),
-        })
+            "path": str(run_directory),
+        }
+
+        self.cleve.add_run("run1", run)
 
         # The directory does not exist, so it has been (re)moved
         self.sensor.poll()
@@ -147,13 +206,17 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             }
         )
 
+        # Move should not be issued again for the same run
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
+
     def test_moved_run_directory_within_watched_directory(self):
         run_directory = Path(self.watch_directories[0].name) / "run1_moved"
         run_directory.mkdir()
         self._write_basic_runparams(run_directory, "NovaSeq", "run1")
         (run_directory / "CopyComplete.txt").touch()
 
-        self.cleve.add_run("supersecretapikey", {
+        self.cleve.add_run("run1", {
             "run_id": "run1",
             "platform": "NovaSeq",
             "state_history": [{"state": "ready", "time": time.localtime()}],
@@ -180,12 +243,14 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         self._write_basic_runparams(run_directory, "NovaSeq", "run1")
         (run_directory / "CopyComplete.txt").touch()
 
-        self.cleve.add_run("supersecretapikey", {
+        run = {
             "run_id": "run1",
             "platform": "NovaSeq",
             "state_history": [{"state": "new", "time": time.localtime()}],
             "path": str(Path(self.watch_directories[0].name) / "run1"),
-        })
+        }
+
+        self.cleve.add_run("run1", run)
 
         # Should emit two triggers since it has been moved, and at the same
         # time the state has changed.
@@ -241,7 +306,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         )
 
         # Add the run to the database
-        self.cleve.add_run("supersecretapikey", {
+        self.cleve.add_run("run1", {
             "run_id": "run1",
             "platform": "NovaSeq",
             "state_history": [{
@@ -253,10 +318,10 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         })
 
         # Add analysis directory to database
-        self.cleve.update_run(
-            key="supersecretapikey",
+        self.cleve.add_analysis(
             run_id="run1",
             analysis={
+                "analysis_id": "1",
                 "path": str(analysis_directory),
                 "state": DirectoryState.PENDING,
             },
