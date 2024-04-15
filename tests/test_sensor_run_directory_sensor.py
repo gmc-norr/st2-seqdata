@@ -29,6 +29,9 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         self.cleve.add_run = Mock(
             side_effect=self._add_run
         )
+        self.cleve.update_run = Mock(
+            side_effect=self._update_run
+        )
         self.cleve.add_analysis = Mock(
             side_effect=self._add_analysis
         )
@@ -62,6 +65,12 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
     def _add_run(self, run_id: str, run: Dict[str, Any]):
         self.cleve.runs[run_id] = run
+
+    def _update_run(self, run_id: str, state: str):
+        self.cleve.runs[run_id]["state_history"].insert(0, {
+            "state": state,
+            "time": time.time(),
+        })
 
     def _add_analysis(self, run_id: str, analysis: Dict[str, Any]):
         self.cleve.runs[run_id]["analysis"].append(analysis)
@@ -205,6 +214,9 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "directory_type": DirectoryType.RUN,
             }
         )
+
+        # Update the run state
+        self.cleve.update_run("run1", state=DirectoryState.MOVED)
 
         # Move should not be issued again for the same run
         self.sensor.poll()
