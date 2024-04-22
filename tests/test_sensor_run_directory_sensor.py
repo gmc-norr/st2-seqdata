@@ -5,7 +5,12 @@ import time
 from typing import Any, Dict, Optional
 from unittest.mock import Mock
 
-from illumina_directory_sensor import IlluminaDirectorySensor, DirectoryState, DirectoryType, PLATFORMS
+from illumina_directory_sensor import (
+    IlluminaDirectorySensor,
+    DirectoryState,
+    DirectoryType,
+    PLATFORMS
+)
 from cleve_service import Cleve
 
 

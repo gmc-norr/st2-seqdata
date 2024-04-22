@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
-import requests
 from st2reactor.sensor.base import PollingSensor
 from typing import Dict, List, Optional
 import xml.etree.ElementTree as ET
@@ -201,7 +200,10 @@ class IlluminaDirectorySensor(PollingSensor):
                     current_state = self.run_directory_state(dirpath)
 
                     if registered_state != current_state:
-                        self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
+                        self._logger.debug(
+                            f"{dirpath} changed state from "
+                            f"{registered_state} to {current_state}"
+                        )
                         self._emit_trigger(
                             "state_change",
                             run_id=run_id,

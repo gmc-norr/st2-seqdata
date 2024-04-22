@@ -15,12 +15,12 @@ class UpdateAnalysisAction(Action):
 
     def run(self,
             run_id: str,
-            path: str,
+            analysis_id: str,
             state: str,
             summary_file: Optional[str] = None) -> Dict[str, Any]:
         return self.cleve.update_analysis(
             run_id=run_id,
+            analysis_id=analysis_id,
             state=state,
-            path=path,
             summary_file=summary_file,
         )
