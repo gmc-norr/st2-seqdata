@@ -1,0 +1,48 @@
+name: Build and test pack
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build_and_test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9"]
+    steps:
+      - name: Checkout
+        uses: StackStorm-Exchange/ci/.github/actions/checkout@master
+        with:
+          st2-branch: master
+          lint-configs-branch: master
+      - name: Install APT dependencies
+        uses: StackStorm-Exchange/ci/.github/actions/apt-dependencies@master
+        with:
+          cache-version: v0
+      - name: Install Python dependencies
+        uses: StackStorm-Exchange/ci/.github/actions/py-dependencies@master
+        with:
+          cache-version: v0
+          python-version: ${{ matrix.python-version }}
+      - name: Run pack tests
+        uses: StackStorm-Exchange/ci/.github/actions/test@master
+        with:
+          enable-common-libs: true
+          force-check-all-files: true
+
+    services:
+      mongo:
+        image: mongo:3.4
+        ports:
+          - 27017:27017
+      rabbitmq:
+        image: rabbitmq:3
+        ports:
+          - 5672:5672
+
