@@ -200,7 +200,10 @@ class IlluminaDirectorySensor(PollingSensor):
                     current_state = self.run_directory_state(dirpath)
 
                     if registered_state != current_state:
-                        self._logger.debug(f"{dirpath} changed state from {registered_state} to {current_state}")
+                        self._logger.debug(
+                            f"{dirpath} changed state from "
+                            f"{registered_state} to {current_state}"
+                        )
                         self._emit_trigger(
                             "state_change",
                             run_id=run_id,
