@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
-import requests
 from st2reactor.sensor.base import PollingSensor
 from typing import Dict, List, Optional
 import xml.etree.ElementTree as ET
