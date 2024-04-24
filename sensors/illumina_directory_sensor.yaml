@@ -28,7 +28,7 @@ trigger_types:
         path:
           type: string
           description: The directory whose state has changed
-          required: true
+          required: false
         summary_file:
           type: string
           description: >
