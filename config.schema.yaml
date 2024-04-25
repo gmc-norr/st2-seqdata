@@ -27,7 +27,7 @@ cleve:
   type: object
   required: true
   properties:
-    host: 
+    host:
       type: string
       required: true
     port:

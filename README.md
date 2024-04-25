@@ -68,4 +68,3 @@ st2-run-pack-tests -p st2-seqdata
 ```
 
 ## Known issues
-
