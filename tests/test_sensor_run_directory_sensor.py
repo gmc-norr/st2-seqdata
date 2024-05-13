@@ -430,6 +430,10 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             },
         )
 
+        # Should not find anything to update
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 2)
+
         (analysis_directory / "CopyComplete.txt").touch()
 
         self.sensor.poll()
