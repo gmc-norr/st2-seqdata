@@ -107,6 +107,18 @@ class IlluminaDirectorySensor(PollingSensor):
 
         return None
 
+    def _run_info_ok(self, rundir: Path) -> None:
+        """
+        Check that RunInfo.xml exists and is not empty.
+
+        :param rundir: path to the run directory
+        """
+        runinfofile = rundir / "RunInfo.xml"
+        if not runinfofile.is_file():
+            raise IOError(f"{runinfofile} does not exist")
+        if runinfofile.stat().st_size == 0:
+            raise ValueError(f"{runinfofile} is empty")
+
     def _handle_incomplete_directory(self,
                                      rundir: Path,
                                      state: str = DirectoryState.INCOMPLETE,
@@ -170,6 +182,22 @@ class IlluminaDirectorySensor(PollingSensor):
                     self._handle_incomplete_directory(
                         dirpath,
                         DirectoryState.ERROR,
+                        str(e),
+                    )
+                    continue
+                except ValueError as e:
+                    self._handle_incomplete_directory(
+                        dirpath,
+                        DirectoryState.ERROR,
+                        str(e),
+                    )
+                    continue
+                try:
+                    self._run_info_ok(dirpath)
+                except IOError as e:
+                    self._handle_incomplete_directory(
+                        dirpath,
+                        DirectoryState.INCOMPLETE,
                         str(e),
                     )
                     continue
@@ -400,14 +428,15 @@ class IlluminaDirectorySensor(PollingSensor):
         :rtype: str
         """
         runparams = path / "RunParameters.xml"
+        runinfo = path / "RunInfo.xml"
         copycomplete = path / "CopyComplete.txt"
 
-        if runparams.is_file() and copycomplete.is_file():
-            return DirectoryState.READY
-        elif runparams.is_file() and not copycomplete.exists():
-            return DirectoryState.PENDING
-        elif not runparams.is_file():
+        if not runparams.is_file() or not runinfo.is_file():
             return DirectoryState.INCOMPLETE
+        elif runparams.is_file() and runinfo.is_file() and copycomplete.is_file():
+            return DirectoryState.READY
+        elif runparams.is_file() and runinfo.is_file() and not copycomplete.exists():
+            return DirectoryState.PENDING
         else:
             return DirectoryState.UNDEFINED
 

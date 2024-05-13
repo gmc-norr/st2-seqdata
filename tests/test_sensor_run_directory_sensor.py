@@ -128,6 +128,19 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             """
             f.write(runparams)
 
+    def _write_basic_runinfo(self, dir: Path, platform: str, run_id: str):
+        runinfofile = dir / "RunInfo.xml"
+        with open(runinfofile, "w") as f:
+            p = PLATFORMS[platform]
+            runparams = f"""
+                <RunInfo Version="6">
+                    <Run Id="{run_id}" Number="123">
+                        <Instrument>{p["serial_pattern"]}1234</Instrument>
+                    </Run>
+                </RunInfo>
+            """
+            f.write(runparams)
+
     def test_new_directory(self):
         run_dirs = [
             Path(self.watch_directories[0].name) / "run1",
@@ -144,12 +157,12 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             payload={
                 "path": str(run_dirs[0]),
                 "state": DirectoryState.INCOMPLETE,
+                "message": f"{run_dirs[0]}/RunParameters.xml does not exist",
                 "directory_type": DirectoryType.RUN,
             }
         )
 
         (run_dirs[0] / "RunParameters.xml").touch()
-        # Should trigger an incomplete directory
         self.sensor.poll()
         # Empty RunParameters.xml should be treated as an error
         self.assertTriggerDispatched(
@@ -162,6 +175,34 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         )
 
         self._write_basic_runparams(run_dirs[0], "NovaSeq", "run1")
+
+        # Should trigger an incomplete directory with incomplete state since
+        # RunInfo.xml does not yet exist.
+        self.sensor.poll()
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.incomplete_directory",
+            payload={
+                "path": str(run_dirs[0]),
+                "state": DirectoryState.INCOMPLETE,
+                "message": f"{run_dirs[0]}/RunInfo.xml does not exist",
+                "directory_type": DirectoryType.RUN,
+            }
+        )
+
+        (run_dirs[0] / "RunInfo.xml").touch()
+        self.sensor.poll()
+        # Empty RunInfo.xml should be treated as an error
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.incomplete_directory",
+            payload={
+                "path": str(run_dirs[0]),
+                "state": DirectoryState.ERROR,
+                "message": f"{run_dirs[0]}/RunInfo.xml is empty",
+                "directory_type": DirectoryType.RUN,
+            }
+        )
+
+        self._write_basic_runinfo(run_dirs[0], "NovaSeq", "run1")
 
         # Should trigger a new directory with pending state since
         # CopyComplete.txt does not yet exist
@@ -198,7 +239,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             }
         )
 
-        self.assertEqual(len(self.get_dispatched_triggers()), 4)
+        self.assertEqual(len(self.get_dispatched_triggers()), 6)
 
     def test_moved_run_directory(self):
         run_directory = Path(self.watch_directories[0].name) / "run1"
@@ -235,6 +276,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1_moved"
         run_directory.mkdir()
         self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
         (run_directory / "CopyComplete.txt").touch()
 
         self.cleve.add_run("run1", {
@@ -262,6 +304,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1_moved"
         run_directory.mkdir()
         self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
         (run_directory / "CopyComplete.txt").touch()
 
         run = {
@@ -300,6 +343,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
         self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
 
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
@@ -337,6 +381,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
         self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
 
         analysis_directory = run_directory / "Analysis" / "1"
         analysis_directory.mkdir(parents=True)
@@ -406,6 +451,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
         self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
 
         analysis_directory = run_directory / "Analysis" / "1"
         analysis_directory.mkdir(parents=True)
