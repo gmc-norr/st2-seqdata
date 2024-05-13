@@ -27,7 +27,7 @@ class Cleve:
             "state": state,
         }
 
-        r = requests.get(uri, data=payload)
+        r = requests.get(uri, params=payload)
 
         if r.status_code != 200:
             raise CleveError(
