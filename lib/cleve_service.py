@@ -53,6 +53,12 @@ class Cleve:
                 open(runparameters, "rb"),
                 "application/xml",
             ),
+        ), (
+            "runinfo", (
+                "RunInfo.xml",
+                open(path, "rb"),
+                "application/xml",
+            ),
         )]
         payload = {
             "path": path,

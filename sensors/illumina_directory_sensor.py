@@ -216,6 +216,7 @@ class IlluminaDirectorySensor(PollingSensor):
                         "new_directory",
                         run_id=run_id,
                         runparameters=str(dirpath / "RunParameters.xml"),
+                        runinfo=str(dirpath / "RunInfo.xml"),
                         path=str(dirpath),
                         state=self.run_directory_state(dirpath),
                         directory_type=DirectoryType.RUN)

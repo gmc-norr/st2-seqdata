@@ -65,6 +65,11 @@ trigger_types:
           description: >
             Path to the runparameters file. Needed for run directories.
           required: false
+        runinfo:
+          type: string
+          description: >
+            Path to the runinfo file. Needed for run directories.
+          required: false
         summary_file:
           type: string
           description: >
