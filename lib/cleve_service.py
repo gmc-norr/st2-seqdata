@@ -22,10 +22,15 @@ class Cleve:
                  state: Optional[str] = None) -> Dict[str, Dict]:
         uri = f"{self.uri}/runs"
         payload = {
-            "brief": brief,
             "platform": platform,
             "state": state,
         }
+
+        # Must exclude brief if false since the response
+        # would otherwise always be brief if the key is
+        # present in the url.
+        if brief:
+            payload["brief"] = "yes"
 
         r = requests.get(uri, params=payload)
 
