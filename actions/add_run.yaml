@@ -21,3 +21,8 @@ parameters:
     description: Path to the runparameters file
     required: true
     position: 2
+  runinfo:
+    type: string
+    description: Path to the runinfo file
+    required: true
+    position: 3

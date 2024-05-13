@@ -40,6 +40,7 @@ class Cleve:
 
     def add_run(self,
                 runparameters: str,
+                runinfo: str,
                 path: str,
                 state: str) -> Dict[str, Any]:
         if self.key is None:
@@ -56,7 +57,7 @@ class Cleve:
         ), (
             "runinfo", (
                 "RunInfo.xml",
-                open(path, "rb"),
+                open(runinfo, "rb"),
                 "application/xml",
             ),
         )]
