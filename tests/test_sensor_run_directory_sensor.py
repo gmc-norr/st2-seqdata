@@ -386,7 +386,10 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         analysis_directory = run_directory / "Analysis" / "1"
         analysis_directory.mkdir(parents=True)
 
-        # Should find a new run directory and a new analysis directory
+        not_analysis_directory = run_directory / "Analysis" / "tmp"
+        not_analysis_directory.mkdir(parents=True)
+
+        # Should find a new run directory and a (1) new analysis directory
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 2)
         self.assertTriggerDispatched(
