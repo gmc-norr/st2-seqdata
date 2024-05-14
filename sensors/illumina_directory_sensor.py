@@ -289,6 +289,12 @@ class IlluminaDirectorySensor(PollingSensor):
 
         for analysis_dir in analysis_dirs:
             dirpath = Path(root) / str(analysis_dir)
+            analysis_id = dirpath.name
+
+            if not analysis_id.isdigit():
+                # Most likely not a real analysis directory, ignore it
+                continue
+
             self._logger.debug(f"looking at analysis at {dirpath}")
             detailed_summary = list((dirpath / "Data" / "summary")
                                     .glob("*/detailed_summary.json"))
@@ -300,8 +306,6 @@ class IlluminaDirectorySensor(PollingSensor):
                 self._logger.debug(
                     f"found detailed summary at {detailed_summary}"
                 )
-
-            analysis_id = dirpath.name
 
             if str(dirpath) in analyses:
                 self._logger.debug(

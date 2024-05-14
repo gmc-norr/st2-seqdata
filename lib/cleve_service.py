@@ -22,10 +22,15 @@ class Cleve:
                  state: Optional[str] = None) -> Dict[str, Dict]:
         uri = f"{self.uri}/runs"
         payload = {
-            "brief": brief,
             "platform": platform,
             "state": state,
         }
+
+        # Must exclude brief if false since the response
+        # would otherwise always be brief if the key is
+        # present in the url.
+        if brief:
+            payload["brief"] = "yes"
 
         r = requests.get(uri, params=payload)
 
@@ -40,6 +45,7 @@ class Cleve:
 
     def add_run(self,
                 runparameters: str,
+                runinfo: str,
                 path: str,
                 state: str) -> Dict[str, Any]:
         if self.key is None:
@@ -56,7 +62,7 @@ class Cleve:
         ), (
             "runinfo", (
                 "RunInfo.xml",
-                open(path, "rb"),
+                open(runinfo, "rb"),
                 "application/xml",
             ),
         )]

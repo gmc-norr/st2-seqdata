@@ -14,11 +14,13 @@ class AddRunAction(Action):
         )
 
     def run(self,
-            runparameters: str,
             path: str,
-            state: str) -> Dict[str, Any]:
+            state: str,
+            runparameters: str,
+            runinfo: str) -> Dict[str, Any]:
         return self.cleve.add_run(
             runparameters=runparameters,
+            runinfo=runinfo,
             path=path,
             state=state,
         )
