@@ -1,5 +1,6 @@
 import cleve_service
 from st2common.runners.base_action import Action
+import sys
 from typing import Any, Dict
 
 
@@ -17,4 +18,8 @@ class AddRunQcAction(Action):
             )
 
     def run(self, run_id: str) -> Dict[str, Any]:
-        return self.cleve.add_run_qc(run_id=run_id)
+        try:
+            return self.cleve.add_run_qc(run_id=run_id)
+        except cleve_service.CleveError as e:
+            self.logger.error(e)
+            sys.exit(1)
