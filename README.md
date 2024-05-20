@@ -33,6 +33,7 @@ ref | description
 --- | ---
 add_analysis     | Add an analysis associated with a sequencing run
 add_run          | Add a sequencing run to the database
+add_run_qc       | Add sequencing QC data to the database
 update_analysis  | Update an analysis associated with a NovaSeq sequencing run
 update_run_state | Update the state of a run
 
@@ -42,6 +43,7 @@ ref | description
 --- | ---
 add_analysis_directory | Rule for adding an analysis directory to an exising NovaSeq run
 add_run_directory      | Rule for adding a new sequencing run directory
+add_run_qc             | Rule for adding QC data to a sequencing run
 notify_incomplete      | Rule for sending an email when an incomplete run directory is found
 update_analysis        | Rule for updating the state and summary for an existing analysis
 update_run_state       | Rule for updating the state of an existing sequencing run
