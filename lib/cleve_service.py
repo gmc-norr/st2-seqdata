@@ -110,6 +110,25 @@ class Cleve:
 
         return r.json()
 
+    def add_run_qc(self, run_id: str) -> Dict[str, Any]:
+        if self.key is None:
+            raise CleveError("no API key provided")
+
+        uri = f"{self.uri}/runs/{run_id}/qc"
+        headers = {
+            "Authorization": self.key,
+        }
+
+        r = requests.post(uri, headers=headers)
+
+        if r.status_code != 200:
+            raise CleveError(
+                f"failed to add QC for run {run_id}: "
+                f"HTTP {r.status_code} {r.json()}"
+            )
+
+        return r.json()
+
     def add_analysis(self,
                      run_id: str,
                      path: str,
