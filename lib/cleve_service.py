@@ -32,7 +32,7 @@ class Cleve:
         payload = {
             "platform": platform,
             "state": state,
-            "pagesize": 0,  # Get all runs
+            "page_size": 0,  # Get all runs
         }
 
         # Must exclude brief if false since the response
