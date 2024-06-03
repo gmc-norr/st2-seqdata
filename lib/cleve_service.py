@@ -16,6 +16,14 @@ class Cleve:
         self.uri = f"http://{host}:{port}/api"
         self.key = key
 
+    def _get(self, uri: str, params=None) -> Dict[str, Any]:
+        r = requests.get(uri, params=params)
+        if r.status_code != 200:
+            raise CleveError(
+                f"failed to fetch {uri}: HTTP {r.status_code}"
+            )
+        return r.json()
+
     def get_runs(self,
                  brief=True,
                  platform: Optional[str] = None,
@@ -24,6 +32,7 @@ class Cleve:
         payload = {
             "platform": platform,
             "state": state,
+            "pagesize": 0,  # Get all runs
         }
 
         # Must exclude brief if false since the response
@@ -32,14 +41,10 @@ class Cleve:
         if brief:
             payload["brief"] = "yes"
 
-        r = requests.get(uri, params=payload)
-
-        if r.status_code != 200:
-            raise CleveError(
-                f"failed to fetch runs from {uri}: HTTP {r.status_code}")
+        res = self._get(uri, payload)
 
         runs = {}
-        for run in r.json():
+        for run in res.get("runs", []):
             runs[run["run_id"]] = run
         return runs
 
