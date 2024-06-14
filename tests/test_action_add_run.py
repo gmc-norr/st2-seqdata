@@ -1,4 +1,3 @@
-import requests
 from unittest.mock import Mock
 
 import cleve_service
