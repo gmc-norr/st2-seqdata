@@ -7,20 +7,19 @@ class AddRunAction(Action):
 
     def __init__(self, config, action_service):
         super().__init__(config, action_service)
-        self.cleve = cleve_service.Cleve(
-            config.get("cleve").get("host"),
-            config.get("cleve").get("port"),
-            config.get("cleve").get("api_key"),
-        )
+        if "cleve_service" in self.config:
+            self.cleve = self.config.get("cleve_service")
+        else:
+            self.cleve = cleve_service.Cleve(
+                config.get("cleve").get("host"),
+                config.get("cleve").get("port"),
+                config.get("cleve").get("api_key"),
+            )
 
     def run(self,
             path: str,
-            state: str,
-            runparameters: str,
-            runinfo: str) -> Dict[str, Any]:
+            state: str) -> Dict[str, Any]:
         return self.cleve.add_run(
-            runparameters=runparameters,
-            runinfo=runinfo,
             path=path,
             state=state,
         )
