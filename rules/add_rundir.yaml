@@ -18,7 +18,5 @@ criteria:
 action:
   ref: gmc_norr_seqdata.add_run
   parameters:
-    runparameters: "{{ trigger.runparameters }}"
-    runinfo: "{{ trigger.runinfo }}"
     path: "{{ trigger.path }}"
     state: "{{ trigger.state }}"

@@ -16,13 +16,3 @@ parameters:
     description: The detected state of the directory
     required: true
     position: 1
-  runparameters:
-    type: string
-    description: Path to the runparameters file
-    required: true
-    position: 2
-  runinfo:
-    type: string
-    description: Path to the runinfo file
-    required: true
-    position: 3

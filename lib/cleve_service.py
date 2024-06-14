@@ -49,8 +49,6 @@ class Cleve:
         return runs
 
     def add_run(self,
-                runparameters: str,
-                runinfo: str,
                 path: str,
                 state: str) -> Dict[str, Any]:
         if self.key is None:
@@ -58,19 +56,6 @@ class Cleve:
 
         uri = f"{self.uri}/runs"
         headers = {"Authorization": self.key}
-        files = [(
-            "runparameters", (
-                "RunParameters.xml",
-                open(runparameters, "rb"),
-                "application/xml",
-            ),
-        ), (
-            "runinfo", (
-                "RunInfo.xml",
-                open(runinfo, "rb"),
-                "application/xml",
-            ),
-        )]
         payload = {
             "path": path,
             "state": state,
@@ -78,8 +63,7 @@ class Cleve:
 
         r = requests.post(
             uri,
-            files=files,
-            data=payload,
+            json=payload,
             headers=headers
         )
 
