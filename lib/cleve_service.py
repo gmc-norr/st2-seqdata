@@ -81,7 +81,7 @@ class Cleve:
         if self.key is None:
             raise CleveError("no API key provided")
 
-        uri = f"{self.uri}/runs/{run_id}"
+        uri = f"{self.uri}/runs/{run_id}/path"
         headers = {
             "Authorization": self.key,
         }
@@ -105,7 +105,7 @@ class Cleve:
         if self.key is None:
             raise CleveError("no API key provided")
 
-        uri = f"{self.uri}/runs/{run_id}"
+        uri = f"{self.uri}/runs/{run_id}/state"
         headers = {
             "Authorization": self.key,
         }
