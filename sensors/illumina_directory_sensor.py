@@ -269,8 +269,7 @@ class IlluminaDirectorySensor(PollingSensor):
                     directory_type=DirectoryType.RUN)
                 # Leave any additional state change for the next poll
                 continue
-
-            if run_id in moved_runs or registered_state == DirectoryState.MOVED:
+            elif run_id in moved_runs:
                 # It has already been handled, or the place to which it
                 # has been moved is not known, so don't do any more
                 # state changes in this round of polling.

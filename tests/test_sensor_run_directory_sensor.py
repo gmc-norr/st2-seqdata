@@ -2,7 +2,7 @@ from pathlib import Path
 from st2tests.base import BaseSensorTestCase
 import tempfile
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 from unittest.mock import Mock
 
 from illumina_directory_sensor import (
@@ -272,11 +272,20 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         )
 
         # Update the run state
-        self.cleve.update_run("run1", state=DirectoryState.MOVED)
+        self.cleve.update_run_state("run1", state=DirectoryState.MOVED)
 
-        # Move should not be issued again for the same run
+        # Incomplete state should be triggered on the next poll since files are missing
         self.sensor.poll()
-        self.assertEqual(len(self.get_dispatched_triggers()), 1)
+        self.assertEqual(len(self.get_dispatched_triggers()), 2)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.state_change",
+            payload={
+                "run_id": "run1",
+                "path": str(Path(self.watch_directories[0].name) / "run1"),
+                "state": DirectoryState.INCOMPLETE,
+                "directory_type": DirectoryType.RUN,
+            }
+        )
 
     def test_moved_run_directory_within_watched_directory(self):
         run_directory = Path(self.watch_directories[0].name) / "run1_moved"
@@ -294,7 +303,6 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         # The directory does not exist, so it has been (re)moved
         self.sensor.poll()
-        # Ensure only a single state change trigger is emitted
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
         self.assertTriggerDispatched(
             trigger="gmc_norr_seqdata.state_change",
@@ -302,6 +310,23 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(Path(self.watch_directories[0].name) / "run1_moved"),
                 "state": DirectoryState.MOVED,
+                "directory_type": DirectoryType.RUN,
+            }
+        )
+
+        # Update run state and path
+        self.cleve.update_run_state("run1", state=DirectoryState.MOVED)
+        self.cleve.update_run_path("run1", path=run_directory)
+
+        # The next poll should emit a state change
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 2)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.state_change",
+            payload={
+                "run_id": "run1",
+                "path": str(Path(self.watch_directories[0].name) / "run1_moved"),
+                "state": DirectoryState.READY,
                 "directory_type": DirectoryType.RUN,
             }
         )
@@ -322,9 +347,9 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         self.cleve.add_run("run1", run)
 
-        # Should emit two triggers since it has been moved, and at the same
-        # time the state has changed.
+        # Moved state should be emitted on first poll
         self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
         self.assertTriggerDispatched(
             trigger="gmc_norr_seqdata.state_change",
             payload={
@@ -334,6 +359,14 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "directory_type": DirectoryType.RUN,
             }
         )
+
+        # Update run
+        self.cleve.update_run_state("run1", state=DirectoryState.MOVED)
+        self.cleve.update_run_path("run1", run_directory)
+
+        # State change should be emitted on second poll
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 2)
         self.assertTriggerDispatched(
             trigger="gmc_norr_seqdata.state_change",
             payload={
