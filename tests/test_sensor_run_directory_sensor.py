@@ -34,8 +34,11 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         self.cleve.add_run = Mock(
             side_effect=self._add_run
         )
-        self.cleve.update_run = Mock(
-            side_effect=self._update_run
+        self.cleve.update_run_path = Mock(
+            side_effect=self._update_run_path
+        )
+        self.cleve.update_run_state = Mock(
+            side_effect=self._update_run_state
         )
         self.cleve.add_analysis = Mock(
             side_effect=self._add_analysis
@@ -75,7 +78,10 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
     def _add_run(self, run_id: str, run: Dict[str, Any]):
         self.cleve.runs[run_id] = run
 
-    def _update_run(self, run_id: str, state: str):
+    def _update_run_path(self, run_id: str, path: Union[str, Path]):
+        self.cleve.runs[run_id]["path"] = str(path)
+
+    def _update_run_state(self, run_id: str, state: str):
         self.cleve.runs[run_id]["state_history"].insert(0, {
             "state": state,
             "time": time.time(),
