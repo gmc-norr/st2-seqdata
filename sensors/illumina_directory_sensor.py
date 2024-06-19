@@ -213,7 +213,8 @@ class IlluminaDirectorySensor(PollingSensor):
                     if state_history:
                         registered_state = state_history[0]["state"]
 
-                    if str(registered_path) != str(dirpath) and registered_state != DirectoryState.MOVED:
+                    if str(registered_path) != str(dirpath) and \
+                            registered_state != DirectoryState.MOVED:
                         # directory has been moved within the watched directories
                         self._logger.debug(f"{dirpath} moved from {registered_path}")
                         self._emit_trigger(
@@ -238,7 +239,9 @@ class IlluminaDirectorySensor(PollingSensor):
 
         return moved_runs
 
-    def _check_existing_runs(self, registered_rundirs: Dict[str, Dict], moved_runs: List[str]) -> None:
+    def _check_existing_runs(self,
+                             registered_rundirs: Dict[str, Dict],
+                             moved_runs: List[str]) -> None:
         """
         Check existing run directories for state changes and new samplesheets.
 
