@@ -1,0 +1,18 @@
+---
+name: update_run_path
+runner_type: python-script
+description: Update the path of a run
+enabled: true
+entry_point: update_run_state.py
+
+parameters:
+  run_id:
+    type: string
+    description: The ID of the run
+    position: 0
+    required: true
+  path:
+    type: string
+    description: The path of the run
+    position: 1
+    required: true
