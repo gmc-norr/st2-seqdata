@@ -75,13 +75,37 @@ class Cleve:
 
         return r.json()
 
-    def update_run(self,
-                   run_id: str,
-                   state: str) -> Dict[str, Any]:
+    def update_run_path(self,
+                        run_id: str,
+                        path: str) -> Dict[str, Any]:
         if self.key is None:
             raise CleveError("no API key provided")
 
-        uri = f"{self.uri}/runs/{run_id}"
+        uri = f"{self.uri}/runs/{run_id}/path"
+        headers = {
+            "Authorization": self.key,
+        }
+        payload = {
+            "path": path,
+        }
+
+        r = requests.patch(uri, json=payload, headers=headers)
+
+        if r.status_code != 200:
+            raise CleveError(
+                f"failed to update run {run_id} in {uri}: "
+                f"HTTP {r.status_code} {r.json()}"
+            )
+
+        return r.json()
+
+    def update_run_state(self,
+                         run_id: str,
+                         state: str) -> Dict[str, Any]:
+        if self.key is None:
+            raise CleveError("no API key provided")
+
+        uri = f"{self.uri}/runs/{run_id}/state"
         headers = {
             "Authorization": self.key,
         }

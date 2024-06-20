@@ -72,7 +72,8 @@ class IlluminaDirectorySensor(PollingSensor):
         as well as state changes of existing directories.
         """
         registered_rundirs = self.cleve.get_runs(brief=True)
-        self._check_for_run(registered_rundirs)
+        moved_runs = self._check_new_runs(registered_rundirs)
+        self._check_existing_runs(registered_rundirs, moved_runs)
 
         runs = self.cleve.get_runs(brief=False, platform="NovaSeq", state="ready")
         self._logger.debug(f"found {len(runs)} ready NovaSeq runs")
@@ -148,19 +149,14 @@ class IlluminaDirectorySensor(PollingSensor):
                                "payload found within the last week, "
                                "won't emit new trigger")
 
-    def _check_for_run(self, registered_rundirs: Dict[str, Dict]) -> None:
+    def _check_new_runs(self, registered_rundirs: Dict[str, Dict]) -> List[str]:
         """
-        Check for new run directories, or state changes of existing run
-        directories.
-
-        Emits triggers for new run directories, state changes of existing run
-        directories, and also incomplete run directories where essential
-        information is missing.
+        Check for new run directories within the watched directories.
 
         :param registered_rundirs: Existing run directories
         :type registered_rundirs: dict
         """
-        moved_dirs = set()
+        moved_runs = []
         for wd in self._watched_directories:
             self._logger.debug(f"checking watch directory: {wd}")
 
@@ -209,10 +205,17 @@ class IlluminaDirectorySensor(PollingSensor):
                     )
                     continue
                 self._logger.debug(f"identified run as {run_id}")
+
                 if run_id in registered_rundirs:
                     registered_path = registered_rundirs[run_id]["path"]
-                    if registered_path != str(dirpath):
-                        moved_dirs.add(run_id)
+                    state_history = registered_rundirs[run_id].get("state_history", [])
+                    registered_state = None
+                    if state_history:
+                        registered_state = state_history[0]["state"]
+
+                    if str(registered_path) != str(dirpath) and \
+                            registered_state != DirectoryState.MOVED:
+                        # directory has been moved within the watched directories
                         self._logger.debug(f"{dirpath} moved from {registered_path}")
                         self._emit_trigger(
                             "state_change",
@@ -220,52 +223,78 @@ class IlluminaDirectorySensor(PollingSensor):
                             path=str(dirpath),
                             state=DirectoryState.MOVED,
                             directory_type=DirectoryType.RUN)
+                        moved_runs.append(run_id)
+                    continue
 
-                    state_history = registered_rundirs[run_id].get("state_history", [])
-                    registered_state = None
-                    if state_history:
-                        registered_state = state_history[0]["state"]
-                    current_state = self.run_directory_state(dirpath)
+                self._logger.debug(f"new directory found: {dirpath}")
+                self._emit_trigger(
+                    "new_directory",
+                    run_id=run_id,
+                    runparameters=str(dirpath / "RunParameters.xml"),
+                    runinfo=str(dirpath / "RunInfo.xml"),
+                    path=str(dirpath),
+                    state=self.run_directory_state(dirpath),
+                    directory_type=DirectoryType.RUN)
+                self._check_for_analysis(run_id, dirpath)
 
-                    if registered_state != current_state:
-                        self._logger.debug(
-                            f"{dirpath} changed state from "
-                            f"{registered_state} to {current_state}"
-                        )
-                        self._emit_trigger(
-                            "state_change",
-                            run_id=run_id,
-                            path=str(dirpath),
-                            state=current_state,
-                            directory_type=DirectoryType.RUN)
-                else:
-                    self._logger.debug(f"new directory found: {dirpath}")
-                    self._emit_trigger(
-                        "new_directory",
-                        run_id=run_id,
-                        runparameters=str(dirpath / "RunParameters.xml"),
-                        runinfo=str(dirpath / "RunInfo.xml"),
-                        path=str(dirpath),
-                        state=self.run_directory_state(dirpath),
-                        directory_type=DirectoryType.RUN)
-                    self._check_for_analysis(run_id, dirpath)
+        return moved_runs
 
-        # Check if existing runs have been moved out of the watched directories
-        for run in registered_rundirs.values():
-            # Don't emit a trigger if the state already is moved
-            state_history = run.get("state_history", [])
-            if state_history and state_history[0]["state"] == DirectoryState.MOVED:
-                continue
-            dirpath = Path(run["path"])
-            if run["run_id"] not in moved_dirs and not dirpath.is_dir():
-                self._logger.debug(f"run {run['run_id']} is missing")
+    def _check_existing_runs(self,
+                             registered_rundirs: Dict[str, Dict],
+                             moved_runs: List[str]) -> None:
+        """
+        Check existing run directories for state changes and new samplesheets.
+
+        :param registered_rundirs: Existing run directories
+        :type registered_rundirs: dict
+        :param moved_runs: List of run ids that are already known to have been moved
+        :type moved_runs: list
+        """
+        for run_id, rundir in registered_rundirs.items():
+            registered_path = Path(rundir["path"])
+            self._logger.debug(f"checking existing run directory: {registered_path}")
+
+            state_history = registered_rundirs[run_id].get("state_history", [])
+            registered_state = None
+            if state_history:
+                registered_state = state_history[0]["state"]
+
+            if not registered_path.is_dir() and \
+                run_id not in moved_runs and \
+                    registered_state != DirectoryState.MOVED:
+                # Run directory has been moved outside the watched directories
+                # or deleted.
                 self._emit_trigger(
                     "state_change",
-                    run_id=run["run_id"],
-                    path=str(run["path"]),
+                    run_id=run_id,
+                    path=None,
                     state=DirectoryState.MOVED,
-                    directory_type=DirectoryType.RUN
+                    directory_type=DirectoryType.RUN)
+                # Leave any additional state change for the next poll
+                continue
+            elif run_id in moved_runs:
+                # It has already been handled, or the place to which it
+                # has been moved is not known, so don't do any more
+                # state changes in this round of polling.
+                continue
+            elif not registered_path.is_dir() and registered_state == DirectoryState.MOVED:
+                # The directory has moved, and we don't know where,
+                # don't try to update the state.
+                continue
+
+            current_state = self.run_directory_state(registered_path)
+
+            if registered_state != current_state:
+                self._logger.debug(
+                    f"{registered_path} changed state from "
+                    f"{registered_state} to {current_state}"
                 )
+                self._emit_trigger(
+                    "state_change",
+                    run_id=run_id,
+                    path=str(registered_path),
+                    state=current_state,
+                    directory_type=DirectoryType.RUN)
 
     def _check_for_analysis(
             self,

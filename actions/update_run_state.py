@@ -14,7 +14,7 @@ class UpdateRunState(Action):
         )
 
     def run(self, run_id: str, state: str) -> Dict[str, Any]:
-        return self.cleve.update_run(
+        return self.cleve.update_run_state(
             run_id=run_id,
             state=state,
         )
