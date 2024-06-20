@@ -267,7 +267,7 @@ class IlluminaDirectorySensor(PollingSensor):
                 self._emit_trigger(
                     "state_change",
                     run_id=run_id,
-                    path=str(registered_path),
+                    path=None,
                     state=DirectoryState.MOVED,
                     directory_type=DirectoryType.RUN)
                 # Leave any additional state change for the next poll
@@ -276,6 +276,10 @@ class IlluminaDirectorySensor(PollingSensor):
                 # It has already been handled, or the place to which it
                 # has been moved is not known, so don't do any more
                 # state changes in this round of polling.
+                continue
+            elif not registered_path.is_dir() and registered_state == DirectoryState.MOVED:
+                # The directory has moved, and we don't know where,
+                # don't try to update the state.
                 continue
 
             current_state = self.run_directory_state(registered_path)

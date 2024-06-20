@@ -1,3 +1,4 @@
+import datetime
 from pathlib import Path
 from st2tests.base import BaseSensorTestCase
 import tempfile
@@ -247,6 +248,31 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         self.assertEqual(len(self.get_dispatched_triggers()), 6)
 
+    def test_state_change_of_moved_directory(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run = {
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [
+                {
+                    "state": "moved",
+                    "time": datetime.datetime.now(),
+                },
+                {
+                    "state": "ready",
+                    "time": datetime.datetime.now() - datetime.timedelta(days=1)
+                },
+            ],
+            "path": str(run_directory),
+        }
+
+        self.cleve.add_run("run1", run)
+
+        # The directory has been moved, and we don't know where,
+        # so no state change should be emitted.
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 0)
+
     def test_moved_run_directory(self):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run = {
@@ -265,7 +291,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             trigger="gmc_norr_seqdata.state_change",
             payload={
                 "run_id": "run1",
-                "path": str(Path(self.watch_directories[0].name) / "run1"),
+                "path": None,
                 "state": DirectoryState.MOVED,
                 "directory_type": DirectoryType.RUN,
             }
@@ -274,18 +300,9 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         # Update the run state
         self.cleve.update_run_state("run1", state=DirectoryState.MOVED)
 
-        # Incomplete state should be triggered on the next poll since files are missing
+        # No more state changes should be emitted for this run
         self.sensor.poll()
-        self.assertEqual(len(self.get_dispatched_triggers()), 2)
-        self.assertTriggerDispatched(
-            trigger="gmc_norr_seqdata.state_change",
-            payload={
-                "run_id": "run1",
-                "path": str(Path(self.watch_directories[0].name) / "run1"),
-                "state": DirectoryState.INCOMPLETE,
-                "directory_type": DirectoryType.RUN,
-            }
-        )
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
 
     def test_moved_run_directory_within_watched_directory(self):
         run_directory = Path(self.watch_directories[0].name) / "run1_moved"
