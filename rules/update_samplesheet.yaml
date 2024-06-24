@@ -1,0 +1,14 @@
+---
+name: update_samplesheet
+description: Rule for updating the samplesheet for a run
+pack: gmc_norr_seqdata
+enabled: true
+
+trigger:
+  type: gmc_norr_seqdata.new_samplesheet
+
+action:
+  ref: gmc_norr_seqdata.update_samplesheet
+  parameters:
+    run_id: "{{ trigger.run_id }}"
+    samplesheet: "{{ trigger.samplesheet }}"

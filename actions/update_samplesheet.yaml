@@ -1,0 +1,18 @@
+---
+name: update_samplesheet
+runner_type: python-script
+description: Update the samplesheet for a run
+enabled: true
+entry_point: update_samplesheet.py
+
+parameters:
+  run_id:
+    type: string
+    description: The ID of the run
+    position: 0
+    required: true
+  state:
+    type: string
+    description: The path to the samplesheet
+    position: 1
+    required: true
