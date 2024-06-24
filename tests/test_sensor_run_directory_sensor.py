@@ -655,3 +655,44 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 0)
+
+    def test_duplicated_run(self):
+        run_directory1 = Path(self.watch_directories[0].name) / "run1"
+        run_directory2 = Path(self.watch_directories[0].name) / "run2"
+
+        run_directory1.mkdir()
+        run_directory2.mkdir()
+        (run_directory1 / "CopyComplete.txt").touch()
+        (run_directory2 / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory1, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory1, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory2, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory2, "NovaSeq", "run1")
+
+        self.cleve.add_run("run1", {
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{
+                "state": DirectoryState.READY,
+                "time": time.localtime(),
+            }],
+            "samplesheet": [],
+            "path": str(run_directory1),
+            "analysis": [],
+        })
+
+        # run1 exists in the database with the directory being run_directory1.
+        # run_directory2 contains the same run, and should be ignored by the
+        # sensor. It should instead emit a trigger sending a notification that
+        # there is a run that has been duplicated within the watch directory.
+        self.sensor.poll()
+        print(self.get_dispatched_triggers())
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.duplicate_run",
+            payload={
+                "run_id": "run1",
+                "path": str(run_directory1),
+                "duplicate_path": str(run_directory2),
+            }
+        )

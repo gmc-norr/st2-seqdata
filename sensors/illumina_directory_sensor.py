@@ -207,13 +207,14 @@ class IlluminaDirectorySensor(PollingSensor):
                 self._logger.debug(f"identified run as {run_id}")
 
                 if run_id in registered_rundirs:
-                    registered_path = registered_rundirs[run_id]["path"]
+                    registered_path = Path(registered_rundirs[run_id]["path"])
                     state_history = registered_rundirs[run_id].get("state_history", [])
                     registered_state = None
                     if state_history:
                         registered_state = state_history[0]["state"]
 
-                    if str(registered_path) != str(dirpath) and \
+                    if not registered_path.exists() and \
+                        str(registered_path) != str(dirpath) and \
                             registered_state != DirectoryState.MOVED:
                         # directory has been moved within the watched directories
                         self._logger.debug(f"{dirpath} moved from {registered_path}")
@@ -224,6 +225,16 @@ class IlluminaDirectorySensor(PollingSensor):
                             state=DirectoryState.MOVED,
                             directory_type=DirectoryType.RUN)
                         moved_runs.append(run_id)
+                    if registered_path.exists() and registered_path != dirpath:
+                        self._logger.warning(f"run {run_id} with path "
+                                             f"{registered_path} was also "
+                                             f"found at {dirpath}")
+                        self._emit_trigger(
+                            "duplicate_run",
+                            run_id=run_id,
+                            path=str(registered_path),
+                            duplicate_path=str(dirpath),
+                        )
                     continue
 
                 self._logger.debug(f"new directory found: {dirpath}")
