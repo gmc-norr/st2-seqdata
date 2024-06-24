@@ -234,6 +234,7 @@ class IlluminaDirectorySensor(PollingSensor):
                             run_id=run_id,
                             path=str(registered_path),
                             duplicate_path=str(dirpath),
+                            email=self.config.get("notification_email"),
                         )
                     continue
 

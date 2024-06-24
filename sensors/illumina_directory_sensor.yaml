@@ -168,3 +168,11 @@ trigger_types:
           type: string
           description: The path of the duplicate run
           required: true
+        email:
+          type: array
+          description: An array of email addresses to send notifications to
+          required: false
+          default: null
+          minItems: 1
+          items:
+            type: string

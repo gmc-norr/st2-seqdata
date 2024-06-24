@@ -1,0 +1,35 @@
+---
+name: notify_duplicate_run
+description: Rule for sending an email when an duplicate run directory is found
+pack: gmc_norr_seqdata
+enabled: true
+
+trigger:
+  type: gmc_norr_seqdata.duplicate_run
+
+# This will still accept an empty array, but the action will fail.
+# Take care to pass None for email when emitting this trigger.
+criteria:
+  trigger.email#1:
+    type: exists
+  trigger.email#2:
+    type: search
+    condition: all
+    pattern:
+      item:
+        type: contains
+        pattern: "@"
+
+action:
+  ref: email.send_email
+  parameters:
+    account: SMTP-VLL
+    email_from: stackstorm@regionvasterbotten.se
+    email_to: "{{ trigger.email | to_json_string }}"
+    subject: Duplicated run directory detected
+    message: |
+      A sequencing run directory has been duplicated and will not be added to the database.
+
+      Run ID: {{ trigger.run_id }}
+      Run path: {{ trigger.path }}
+      Duplicated path: {{ trigger.duplicate_path }}

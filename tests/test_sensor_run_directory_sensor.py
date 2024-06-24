@@ -693,5 +693,6 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "run_id": "run1",
                 "path": str(run_directory1),
                 "duplicate_path": str(run_directory2),
+                "email": ["me@mail.com"],
             }
         )
