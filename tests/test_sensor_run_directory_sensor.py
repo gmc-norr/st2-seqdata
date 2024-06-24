@@ -686,7 +686,6 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         # sensor. It should instead emit a trigger sending a notification that
         # there is a run that has been duplicated within the watch directory.
         self.sensor.poll()
-        print(self.get_dispatched_triggers())
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
         self.assertTriggerDispatched(
             trigger="gmc_norr_seqdata.duplicate_run",
