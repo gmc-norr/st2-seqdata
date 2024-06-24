@@ -296,6 +296,63 @@ class IlluminaDirectorySensor(PollingSensor):
                     state=current_state,
                     directory_type=DirectoryType.RUN)
 
+            # Find any new samplesheets
+            samplesheet_info = rundir.get("samplesheet")
+            if not samplesheet_info:
+                samplesheet_modtime = None
+            else:
+                mod_time_str = samplesheet_info.get("modification_time")
+                samplesheet_modtime = datetime.strptime(
+                    mod_time_str,
+                    "%Y-%m-%dT%H:%M:%S.%fZ",
+                )
+                samplesheet_modtime = samplesheet_modtime.replace(microsecond=0)
+            self._find_samplesheet(
+                run_id=run_id,
+                path=registered_path,
+                newer_than=samplesheet_modtime
+            )
+
+    def _find_samplesheet(
+            self,
+            run_id: str,
+            path: Path,
+            newer_than: Optional[datetime] = None) -> None:
+        """
+        Find any new samplesheets in the given directory. If `newer_than` is
+        not `None`, then a trigger will only be emitted if there is a
+        samplesheet with a modification more recent than `newer_than`. If
+        `newer_than` is `None`, then a trigger for the most recent samplesheet
+        will be emitted, if one exists.
+        """
+        samplesheets = path.glob("[Ss]ample[Ss]heet*.csv")
+        mod_times = []
+        for ss in samplesheets:
+            info = ss.stat()
+            modification_time = datetime.fromtimestamp(info.st_mtime)
+            modification_time = modification_time.replace(microsecond=0)
+            mod_times.append((ss, modification_time))
+
+        mod_times = sorted(mod_times, reverse=True)
+
+        if len(mod_times) == 0:
+            return
+
+        most_recent_samplesheet = mod_times[0]
+
+        if newer_than is None:
+            self._emit_trigger(
+                "new_samplesheet",
+                run_id=run_id,
+                samplesheet=str(most_recent_samplesheet[0]),
+            )
+        elif most_recent_samplesheet[1] > newer_than:
+            self._emit_trigger(
+                "new_samplesheet",
+                run_id=run_id,
+                samplesheet=str(most_recent_samplesheet[0]),
+            )
+
     def _check_for_analysis(
             self,
             run_id: str,

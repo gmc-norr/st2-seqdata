@@ -1,4 +1,5 @@
 import datetime
+import os
 from pathlib import Path
 from st2tests.base import BaseSensorTestCase
 import tempfile
@@ -540,3 +541,117 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "directory_type": DirectoryType.ANALYSIS,
             }
         )
+
+    def test_new_samplesheet(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        original_samplesheet = (run_directory / "SampleSheet.csv")
+        new_samplesheet = (run_directory / "SampleSheet_new.csv")
+
+        original_samplesheet.touch()
+        new_samplesheet.touch()
+
+        modtime = datetime.datetime(2024, 6, 20, 13, 9, 3, 617000)
+        os.utime(
+            original_samplesheet,
+            (modtime.timestamp(), modtime.timestamp())
+        )
+
+        self.cleve.add_run("run1", {
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{
+                "state": DirectoryState.READY,
+                "time": time.localtime(),
+            }],
+            "samplesheet": {
+                "path": str(run_directory / "SampleSheet.csv"),
+                "modification_time": "2024-06-20T13:09:03.617Z",
+            },
+            "path": str(run_directory),
+            "analysis": [],
+        })
+
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.new_samplesheet",
+            payload={
+                "run_id": "run1",
+                "samplesheet": str(new_samplesheet),
+            }
+        )
+
+    def test_new_samplesheet_with_none_registered(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        original_samplesheet = (run_directory / "SampleSheet.csv")
+
+        original_samplesheet.touch()
+
+        self.cleve.add_run("run1", {
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{
+                "state": DirectoryState.READY,
+                "time": time.localtime(),
+            }],
+            "samplesheet": [],
+            "path": str(run_directory),
+            "analysis": [],
+        })
+
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.new_samplesheet",
+            payload={
+                "run_id": "run1",
+                "samplesheet": str(original_samplesheet),
+            }
+        )
+
+    def test_new_samplesheet_with_microsecond_difference(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        samplesheet = (run_directory / "SampleSheet.csv")
+
+        samplesheet.touch()
+
+        original_modtime = datetime.datetime(2024, 6, 20, 13, 9, 3, 617123)
+        os.utime(
+            samplesheet,
+            (original_modtime.timestamp(), original_modtime.timestamp())
+        )
+
+        # The new samplesheet is technically newer than what is in the
+        # database, but this could be due to the modification time being
+        # saved as milliseconds in the database instead of microseconds.
+        # In these cases no trigger should be emitted.
+
+        self.cleve.add_run("run1", {
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{
+                "state": DirectoryState.READY,
+                "time": time.localtime(),
+            }],
+            "samplesheet": {
+                "path": str(run_directory / "SampleSheet.csv"),
+                "modification_time": "2024-06-20T13:09:03.617Z",
+            },
+            "path": str(run_directory),
+            "analysis": [],
+        })
+
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 0)
