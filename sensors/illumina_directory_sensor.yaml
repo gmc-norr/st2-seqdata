@@ -132,3 +132,19 @@ trigger_types:
           type: string
           description: A message describing why the directory is incomplete
           required: false
+
+  - name: new_samplesheet
+    pack: gmc_norr_seqdata
+    description: >
+      Triggers when a new samplesheet is found for a run.
+    payload_schema:
+      type: object
+      properties:
+        run_id:
+          type: string
+          description: The ID of the run
+          required: true
+        samplesheet:
+          type: string
+          description: The path to the samplesheet
+          required: true
