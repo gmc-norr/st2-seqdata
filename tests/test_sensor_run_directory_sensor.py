@@ -617,6 +617,47 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             }
         )
 
+    def test_new_samplesheet_with_different_timezone(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        original_samplesheet = (run_directory / "SampleSheet.csv")
+
+        original_samplesheet.touch()
+
+        # File modification time is local
+        modtime = datetime.datetime.now(
+            tz=datetime.timezone(datetime.timedelta(hours=2))
+        )
+        os.utime(
+            original_samplesheet,
+            (modtime.timestamp(), modtime.timestamp())
+        )
+
+        # Modification time in database is UTC
+        self.cleve.add_run("run1", {
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{
+                "state": DirectoryState.READY,
+                "time": time.localtime(),
+            }],
+            "samplesheet": {
+                "path": str(original_samplesheet),
+                "modification_time": modtime.replace(
+                    tzinfo=datetime.timezone.utc
+                ).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            },
+            "path": str(run_directory),
+            "analysis": [],
+        })
+
+        # No trigger should be emitted
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 0)
+
     def test_new_samplesheet_with_microsecond_difference(self):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
