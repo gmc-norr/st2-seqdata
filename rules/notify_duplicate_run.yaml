@@ -8,11 +8,13 @@ trigger:
   type: gmc_norr_seqdata.duplicate_run
 
 # This will still accept an empty array, but the action will fail.
-# Take care to pass None for email when emitting this trigger.
+# Take care to pass None for email if there are no email addresses
+# defined in the config.
 criteria:
-  trigger.email#1:
+  trigger:
     type: exists
-  trigger.email#2:
+    pattern: email
+  trigger.email:
     type: search
     condition: all
     pattern:
