@@ -11,7 +11,7 @@ parameters:
     description: The ID of the run
     position: 0
     required: true
-  state:
+  samplesheet:
     type: string
     description: The path to the samplesheet
     position: 1
