@@ -359,7 +359,10 @@ class IlluminaDirectorySensor(PollingSensor):
                     mod_time_str,
                     "%Y-%m-%dT%H:%M:%S.%fZ",
                 )
-                samplesheet_modtime = samplesheet_modtime.replace(microsecond=0)
+                samplesheet_modtime = samplesheet_modtime.replace(
+                    microsecond=0,
+                    tzinfo=timezone.utc
+                )
             self._find_samplesheet(
                 run_id=run_id,
                 path=registered_path,
@@ -382,7 +385,7 @@ class IlluminaDirectorySensor(PollingSensor):
         mod_times = []
         for ss in samplesheets:
             info = ss.stat()
-            modification_time = datetime.fromtimestamp(info.st_mtime)
+            modification_time = datetime.fromtimestamp(info.st_mtime, tz=timezone.utc)
             modification_time = modification_time.replace(microsecond=0)
             mod_times.append((ss, modification_time))
 
