@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
 from st2reactor.sensor.base import PollingSensor
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 import xml.etree.ElementTree as ET
 
 from cleve_service import Cleve
@@ -84,29 +84,55 @@ class IlluminaDirectorySensor(PollingSensor):
                 run.get("analysis", [])
             )
 
-    def _find_incomplete_directory_trigger(self,
-                                           payload: Dict) -> Optional[str]:
+    def _find_emitted_trigger(self,
+                              trigger: str,
+                              payload: Dict,
+                              newer_than: datetime) -> Optional[str]:
         """
-        Find an incomplete_directory trigger instance with the same
-        payload that is less than one week old.
+        Find a specific trigger instance with a certain
+        payload that is newer than the given timestamp.
         """
         timeformat = "%Y-%m-%dT%H:%M:%S.%fZ"
-        one_week_old = (datetime.now(timezone.utc) - timedelta(days=7))
-
         try:
             client = self.sensor_service.datastore_service.get_api_client()
         except NotImplementedError:
             # API client not available in tests, return no matches
             return None
         instances = client.triggerinstances.query(
-            trigger="gmc_norr_seqdata.incomplete_directory",
-            timestamp_gt=one_week_old.strftime(timeformat),
+            trigger=f"gmc_norr_seqdata.{trigger}",
+            timestamp_gt=newer_than.strftime(timeformat),
         )
         for instance in instances:
             if instance.payload == payload:
                 return instance.id
 
         return None
+
+    def _find_incomplete_directory_trigger(self,
+                                           payload: Dict) -> Optional[str]:
+        """
+        Find an incomplete_directory trigger instance with a particular
+        payload that is less than one week old.
+        """
+        one_week_old = (datetime.now(timezone.utc) - timedelta(days=7))
+        return self._find_emitted_trigger(
+            "incomplete_directory",
+            payload,
+            one_week_old
+        )
+
+    def _find_duplicate_run_trigger(self,
+                                    payload: Dict) -> Optional[str]:
+        """
+        Find a duplicate run trigger instance with a particular
+        payload that is less than one week old.
+        """
+        one_week_old = (datetime.now(timezone.utc) - timedelta(days=7))
+        return self._find_emitted_trigger(
+            "duplicate_run",
+            payload,
+            one_week_old
+        )
 
     def _run_info_ok(self, rundir: Path) -> None:
         """
@@ -119,6 +145,30 @@ class IlluminaDirectorySensor(PollingSensor):
             raise IOError(f"{runinfofile} does not exist")
         if runinfofile.stat().st_size == 0:
             raise ValueError(f"{runinfofile} is empty")
+
+    def _handle_duplicate_run(self,
+                              run_id: str,
+                              path: Union[Path, str],
+                              duplicate_path: Union[Path, str]) -> None:
+        self._logger.warning(f"run {run_id} with path "
+                             f"{path} was also "
+                             f"found at {duplicate_path}")
+        payload = dict(
+            run_id=run_id,
+            path=str(path),
+            duplicate_path=str(duplicate_path),
+            email=self.config.get("notification_email"),
+        )
+        t = self._find_duplicate_run_trigger(payload)
+        if t is None:
+            self._emit_trigger(
+                "duplicate_run",
+                **payload,
+            )
+        else:
+            self._logger.debug("trigger instance with the same "
+                               "payload found within the last week, "
+                               "won't emit new trigger")
 
     def _handle_incomplete_directory(self,
                                      rundir: Path,
@@ -226,16 +276,7 @@ class IlluminaDirectorySensor(PollingSensor):
                             directory_type=DirectoryType.RUN)
                         moved_runs.append(run_id)
                     if registered_path.exists() and registered_path != dirpath:
-                        self._logger.warning(f"run {run_id} with path "
-                                             f"{registered_path} was also "
-                                             f"found at {dirpath}")
-                        self._emit_trigger(
-                            "duplicate_run",
-                            run_id=run_id,
-                            path=str(registered_path),
-                            duplicate_path=str(dirpath),
-                            email=self.config.get("notification_email"),
-                        )
+                        self._handle_duplicate_run(run_id, registered_path, dirpath)
                     continue
 
                 self._logger.debug(f"new directory found: {dirpath}")

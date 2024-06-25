@@ -696,3 +696,13 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "email": ["me@mail.com"],
             }
         )
+
+        # Mock a trigger instance in the database
+        self.sensor._find_duplicate_run_trigger = Mock(
+            return_value="mock_trigger_instance"
+        )
+
+        # No new triggers should be emitted since a recent trigger instance
+        # already exists.
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
