@@ -124,6 +124,19 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 f"trigger '{trigger}' with payload {payload} not dispatched"
             )
 
+    def _write_basic_runcompletionstatus(self,
+                                         dir: Path,
+                                         tag: str = "RunStatus",
+                                         status: str = "RunCompleted"):
+        runcompletionstatusfile = dir / "RunCompletionStatus.xml"
+        with open(runcompletionstatusfile, "w") as f:
+            content = f"""
+                <RunCompletionStatus>
+                    <{tag}>{status}</{tag}>
+                </RunCompletionStatus>
+            """
+            f.write(content)
+
     def _write_basic_runparams(self, dir: Path, platform: str, run_id: str):
         runparamsfile = dir / "RunParameters.xml"
         with open(runparamsfile, "w") as f:
@@ -747,3 +760,58 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         # already exists.
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
+
+    def test_run_directory_state(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+
+        # No RunCompletionStatus.xml should yield READY
+        self.assertEqual(
+            self.sensor.run_directory_state(run_directory),
+            DirectoryState.READY,
+        )
+
+        self._write_basic_runcompletionstatus(
+            run_directory,
+            status="RunCompleted"
+        )
+        # RunCompletionStatus.xml for a successful run
+        self.assertEqual(
+            self.sensor.run_directory_state(run_directory),
+            DirectoryState.READY,
+        )
+
+        self._write_basic_runcompletionstatus(
+            run_directory,
+            status="RunErrored",
+        )
+        # RunCompletionStatus.xml for a failed run
+        self.assertEqual(
+            self.sensor.run_directory_state(run_directory),
+            DirectoryState.ERROR,
+        )
+
+        self._write_basic_runcompletionstatus(
+            run_directory,
+            tag="CompletionStatus",
+            status="CompletedAsPlanned",
+        )
+        # RunCompletionStatus.xml for a successful NextSeq run
+        self.assertEqual(
+            self.sensor.run_directory_state(run_directory),
+            DirectoryState.READY,
+        )
+
+        self._write_basic_runcompletionstatus(
+            run_directory,
+            tag="CompletionStatus",
+            status="ExceptionEndedEarly",
+        )
+        # RunCompletionStatus.xml for a failed NextSeq run
+        self.assertEqual(
+            self.sensor.run_directory_state(run_directory),
+            DirectoryState.ERROR,
+        )
