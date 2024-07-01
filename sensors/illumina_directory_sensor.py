@@ -558,8 +558,10 @@ class IlluminaDirectorySensor(PollingSensor):
         """
         Get the state of a directory
 
-        If a directory contains a RunParameters.xml file and a CopyComplete.txt
-        file, then the directory is ready for analysis.
+        If a directory contains a RunParameters.xml file, a RunInfo.xml file
+        and a CopyComplete.txt file, then the directory is ready for analysis,
+        but only if the RunCompletionStatus.xml file also states that the run
+        was successful.
 
         If the directory only contains a RunParameters.xml file, processing on
         the machine is not yet complete, so the directory is pending.
@@ -576,15 +578,49 @@ class IlluminaDirectorySensor(PollingSensor):
         runparams = path / "RunParameters.xml"
         runinfo = path / "RunInfo.xml"
         copycomplete = path / "CopyComplete.txt"
+        runcompletionstatus = path / "RunCompletionStatus.xml"
 
         if not runparams.is_file() or not runinfo.is_file():
             return DirectoryState.INCOMPLETE
-        elif runparams.is_file() and runinfo.is_file() and copycomplete.is_file():
-            return DirectoryState.READY
-        elif runparams.is_file() and runinfo.is_file() and not copycomplete.exists():
+        elif runparams.is_file() and runinfo.is_file() \
+                and copycomplete.is_file():
+            if runcompletionstatus.is_file():
+                if self._run_completion_status(runcompletionstatus):
+                    return DirectoryState.READY
+                else:
+                    return DirectoryState.ERROR
+            else:
+                return DirectoryState.READY
+        elif runparams.is_file() and runinfo.is_file() and \
+                not copycomplete.exists():
             return DirectoryState.PENDING
         else:
             return DirectoryState.UNDEFINED
+
+    def _run_completion_status(self, path: Path) -> bool:
+        """
+        Read RunCompletionStatus.xml and return true if the run has
+        successfully completed, and false otherwise.
+        """
+        try:
+            tree = ET.parse(path)
+        except ET.ParseError:
+            raise
+
+        root = tree.getroot()
+        # NovaSeq structure
+        runstatus = root.find("RunStatus")
+        if runstatus is not None and runstatus.text == "RunCompleted":
+            return True
+
+        if runstatus is None:
+            # NextSeq structure
+            runstatus = root.find("CompletionStatus")
+            if runstatus is not None and \
+                    runstatus.text == "CompletedAsPlanned":
+                return True
+
+        return False
 
     def analysis_directory_state(self, path: Path) -> str:
         copycomplete = path / "CopyComplete.txt"
