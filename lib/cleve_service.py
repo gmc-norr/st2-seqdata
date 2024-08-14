@@ -10,7 +10,7 @@ class Cleve:
 
     def __init__(
             self,
-            host: str = "localhost",
+            host: str = "http://localhost",
             port: int = 8080,
             key: Optional[str] = None):
         self.uri = f"{host}:{port}/api"
