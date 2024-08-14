@@ -10,10 +10,10 @@ class Cleve:
 
     def __init__(
             self,
-            host: str = "localhost",
+            host: str = "http://localhost",
             port: int = 8080,
             key: Optional[str] = None):
-        self.uri = f"http://{host}:{port}/api"
+        self.uri = f"{host}:{port}/api"
         self.key = key
 
     def _get(self, uri: str, params=None) -> Dict[str, Any]:
