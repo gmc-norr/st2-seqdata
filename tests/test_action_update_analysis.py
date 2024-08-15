@@ -43,7 +43,7 @@ class UpdateAnalyisTestCase(BaseActionTestCase):
         cleve_service.requests.patch.assert_called_with(
             "http://localhost:8080/api/runs/run1/analysis/1",
             files={
-                "state": "ready",
+                "state": (None, "ready"),
             },
             headers={
                 "Authorization": "secret",
@@ -68,8 +68,8 @@ class UpdateAnalyisTestCase(BaseActionTestCase):
         cleve_service.requests.patch.assert_called_with(
             "http://localhost:8080/api/runs/run1/analysis/1",
             files={
-                "state": "ready",
-                "analysis_summary": (
+                "state": (None, "ready"),
+                "summary_file": (
                     "detailed_summary.json",
                     ANY,
                     'application/json',
