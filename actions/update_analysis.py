@@ -5,13 +5,16 @@ from typing import Any, Dict, Optional
 
 class UpdateAnalysisAction(Action):
 
-    def __init__(self, action_service, config):
-        super().__init__(action_service, config)
-        self.cleve = Cleve(
-            config.get("cleve").get("host"),
-            config.get("cleve").get("port"),
-            config.get("cleve").get("api_key"),
-        )
+    def __init__(self, config, action_service):
+        super().__init__(config, action_service)
+        if "cleve_service" in self.config:
+            self.cleve = self.config.get("cleve_service")
+        else:
+            self.cleve = Cleve(
+                config.get("cleve").get("host"),
+                config.get("cleve").get("port"),
+                config.get("cleve").get("api_key"),
+            )
 
     def run(self,
             run_id: str,
