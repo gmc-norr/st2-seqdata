@@ -215,10 +215,10 @@ class Cleve:
         files = {}
 
         if state is not None:
-            files["state"] = state
+            files["state"] = (None, state)
 
         if summary_file is not None:
-            files["analysis_summary"] = (
+            files["summary_file"] = (
                 "detailed_summary.json",
                 open(summary_file, "rb"),
                 "application/json",
