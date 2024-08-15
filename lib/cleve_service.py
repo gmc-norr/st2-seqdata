@@ -212,24 +212,19 @@ class Cleve:
         uri = f"{self.uri}/runs/{run_id}/analysis/{analysis_id}"
         headers = {"Authorization": self.key}
 
-        payload = None
-        files = None
+        files = {}
 
         if state is not None:
-            payload = {
-                "state": state,
-            }
+            files["state"] = state
 
         if summary_file is not None:
-            files = [(
-                "analysis_summary", (
-                    "detailed_summary.json",
-                    open(summary_file, "rb"),
-                    "application/json",
-                ),
-            )]
+            files["analysis_summary"] = (
+                "detailed_summary.json",
+                open(summary_file, "rb"),
+                "application/json",
+            )
 
-        r = requests.patch(uri, data=payload, files=files, headers=headers)
+        r = requests.patch(uri, files=files, headers=headers)
 
         if r.status_code != 200:
             raise CleveError(
