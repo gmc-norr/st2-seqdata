@@ -383,13 +383,17 @@ class IlluminaDirectorySensor(PollingSensor):
         """
         samplesheets = path.glob("[Ss]ample[Ss]heet*.csv")
         mod_times = []
+        current_tz = datetime.now(timezone.utc).astimezone().tzinfo
         for ss in samplesheets:
             info = ss.stat()
-            modification_time = datetime.fromtimestamp(info.st_mtime, tz=timezone.utc)
+            modification_time = datetime.fromtimestamp(
+                info.st_mtime,
+                tz=current_tz
+            )
             modification_time = modification_time.replace(microsecond=0)
             mod_times.append((ss, modification_time))
 
-        mod_times = sorted(mod_times, reverse=True)
+        mod_times = sorted(mod_times, key=lambda x: x[1], reverse=True)
 
         if len(mod_times) == 0:
             return
