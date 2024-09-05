@@ -1,10 +1,11 @@
+from dataclasses import dataclass
 import datetime
 import os
 from pathlib import Path
 from st2tests.base import BaseSensorTestCase
 import tempfile
 import time
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from unittest.mock import Mock
 
 from illumina_directory_sensor import (
@@ -567,11 +568,17 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         original_samplesheet.touch()
         new_samplesheet.touch()
 
-        modtime = datetime.datetime(2024, 6, 20, 13, 9, 3, 617000)
+        modtime = datetime.datetime(
+            2024, 6, 20, 13, 9, 3, 617000,
+            tzinfo=datetime.timezone(datetime.timedelta(hours=2)),
+        )
         os.utime(
             original_samplesheet,
             (modtime.timestamp(), modtime.timestamp())
         )
+
+        # Same modification time, but different timezone.
+        server_modtime = modtime.astimezone(datetime.timezone.utc)
 
         self.cleve.add_run("run1", {
             "run_id": "run1",
@@ -582,12 +589,16 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             }],
             "samplesheet": {
                 "path": str(run_directory / "SampleSheet.csv"),
-                "modification_time": "2024-06-20T13:09:03.617Z",
+                "modification_time":
+                    server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             },
             "path": str(run_directory),
             "analysis": [],
         })
 
+        # Assuming that the test is not run in the past,
+        # we expect the `new_samplesheet` to replacet the
+        # original one.
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
         self.assertTriggerDispatched(
@@ -671,6 +682,114 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 0)
 
+    def test_find_samplesheet(self):
+        @dataclass
+        class TestCase:
+            samplesheets: List[Path]
+            modtimes: List[datetime.datetime]
+            expect: str
+
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+
+        testcases = [
+            TestCase(
+                samplesheets=[
+                    run_directory / "SampleSheet.csv",
+                ],
+                modtimes=[
+                    datetime.datetime(2024, 9, 4, 15, 23),
+                ],
+                expect=str(run_directory / "SampleSheet.csv"),
+            ),
+            TestCase(
+                samplesheets=[
+                    run_directory / "SampleSheet.csv",
+                    run_directory / "SampleSheet_final.csv",
+                    run_directory / "SampleSheet_old.csv",
+                ],
+                modtimes=[
+                    datetime.datetime(2024, 9, 4, 15, 23),
+                    datetime.datetime(2024, 9, 4, 15, 50),
+                    datetime.datetime(2024, 9, 4, 15, 0),
+                ],
+                expect=str(run_directory / "SampleSheet_final.csv"),
+            ),
+        ]
+
+        for n, case in enumerate(testcases, start=1):
+            for s, t in zip(case.samplesheets, case.modtimes):
+                s.touch()
+                os.utime(s, (t.timestamp(), t.timestamp()))
+
+            self.sensor._find_samplesheet(run_id="run1", path=run_directory)
+            self.assertEqual(len(self.get_dispatched_triggers()), n)
+            self.assertTriggerDispatched(
+                trigger="gmc_norr_seqdata.new_samplesheet",
+                payload={
+                    "run_id": "run1",
+                    "samplesheet": case.expect,
+                })
+
+            for s in case.samplesheets:
+                s.unlink()
+
+    def test_update_samplesheet(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        original_samplesheet = (run_directory / "SampleSheet.csv")
+        old_samplesheet = (run_directory / "SampleSheet_old.csv")
+
+        original_samplesheet.touch()
+        old_samplesheet.touch()
+
+        # File modification time is local, i.e. CEST
+        modtime = datetime.datetime(
+            2024, 9, 3, 8, 40,
+            tzinfo=datetime.timezone(datetime.timedelta(hours=2))
+        )
+        oldtime = datetime.datetime(
+            2024, 9, 3, 8, 18,
+            tzinfo=datetime.timezone(datetime.timedelta(hours=2))
+        )
+
+        os.utime(
+            original_samplesheet,
+            (modtime.timestamp(), modtime.timestamp())
+        )
+        os.utime(
+            old_samplesheet,
+            (oldtime.timestamp(), oldtime.timestamp())
+        )
+
+        # Server modification time is in UTC
+        server_modtime = modtime.astimezone(datetime.timezone.utc)
+
+        self.cleve.add_run("run1", {
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{
+                "state": DirectoryState.READY,
+                "time": time.localtime(),
+            }],
+            "samplesheet": {
+                "path": str(original_samplesheet),
+                "modification_time":
+                    server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            },
+            "path": str(run_directory),
+            "analysis": [],
+        })
+
+        # No trigger should be dispatched since the modification time of the
+        # most recent sample sheet on disk is the same as the one in the
+        # database, just different time zones.
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 0)
+
     def test_new_samplesheet_with_microsecond_difference(self):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
@@ -681,11 +800,16 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         samplesheet.touch()
 
-        original_modtime = datetime.datetime(2024, 6, 20, 13, 9, 3, 617123)
+        original_modtime = datetime.datetime(
+            2024, 6, 20, 13, 9, 3, 617123,
+            tzinfo=datetime.timezone(datetime.timedelta(hours=2)),
+        )
         os.utime(
             samplesheet,
-            (original_modtime.timestamp(), original_modtime.timestamp())
+            (original_modtime.timestamp(), original_modtime.timestamp()),
         )
+
+        server_modtime = original_modtime.astimezone(datetime.timezone.utc)
 
         # The new samplesheet is technically newer than what is in the
         # database, but this could be due to the modification time being
@@ -701,7 +825,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             }],
             "samplesheet": {
                 "path": str(run_directory / "SampleSheet.csv"),
-                "modification_time": "2024-06-20T13:09:03.617Z",
+                "modification_time":
+                    server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             },
             "path": str(run_directory),
             "analysis": [],
