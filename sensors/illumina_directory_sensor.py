@@ -351,7 +351,7 @@ class IlluminaDirectorySensor(PollingSensor):
 
             # Find any new samplesheets
             samplesheet_info = rundir.get("samplesheet")
-            if not samplesheet_info:
+            if not samplesheet_info or not Path(samplesheet_info.get("path")).exists():
                 samplesheet_modtime = None
             else:
                 mod_time_str = samplesheet_info.get("modification_time")
