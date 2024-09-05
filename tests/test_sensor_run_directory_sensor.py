@@ -777,7 +777,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             }],
             "samplesheet": {
                 "path": str(original_samplesheet),
-                "modification_time": server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                "modification_time":
+                    server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             },
             "path": str(run_directory),
             "analysis": [],
@@ -799,11 +800,16 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         samplesheet.touch()
 
-        original_modtime = datetime.datetime(2024, 6, 20, 13, 9, 3, 617123)
+        original_modtime = datetime.datetime(
+            2024, 6, 20, 13, 9, 3, 617123,
+            tzinfo=datetime.timezone(datetime.timedelta(hours=2)),
+        )
         os.utime(
             samplesheet,
-            (original_modtime.timestamp(), original_modtime.timestamp())
+            (original_modtime.timestamp(), original_modtime.timestamp()),
         )
+
+        server_modtime = original_modtime.astimezone(datetime.timezone.utc)
 
         # The new samplesheet is technically newer than what is in the
         # database, but this could be due to the modification time being
@@ -819,7 +825,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             }],
             "samplesheet": {
                 "path": str(run_directory / "SampleSheet.csv"),
-                "modification_time": "2024-06-20T13:09:03.617Z",
+                "modification_time":
+                    server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             },
             "path": str(run_directory),
             "analysis": [],
