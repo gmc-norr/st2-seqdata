@@ -568,11 +568,17 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         original_samplesheet.touch()
         new_samplesheet.touch()
 
-        modtime = datetime.datetime(2024, 6, 20, 13, 9, 3, 617000)
+        modtime = datetime.datetime(
+            2024, 6, 20, 13, 9, 3, 617000,
+            tzinfo=datetime.timezone(datetime.timedelta(hours=2)),
+        )
         os.utime(
             original_samplesheet,
             (modtime.timestamp(), modtime.timestamp())
         )
+
+        # Same modification time, but different timezone.
+        server_modtime = modtime.astimezone(datetime.timezone.utc)
 
         self.cleve.add_run("run1", {
             "run_id": "run1",
@@ -583,12 +589,16 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             }],
             "samplesheet": {
                 "path": str(run_directory / "SampleSheet.csv"),
-                "modification_time": "2024-06-20T13:09:03.617Z",
+                "modification_time":
+                    server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             },
             "path": str(run_directory),
             "analysis": [],
         })
 
+        # Assuming that the test is not run in the past,
+        # we expect the `new_samplesheet` to replacet the
+        # original one.
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
         self.assertTriggerDispatched(
