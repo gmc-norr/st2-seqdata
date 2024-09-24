@@ -209,6 +209,9 @@ class IlluminaDirectorySensor(PollingSensor):
         moved_runs = []
         for wd in self._watched_directories:
             self._logger.debug(f"checking watch directory: {wd}")
+            if not os.path.exists(wd):
+                self._logger.error(f"directory {wd} does not exist")
+                continue
 
             root, dirnames, _ = next(os.walk(wd))
 
