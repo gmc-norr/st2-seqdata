@@ -39,7 +39,7 @@ class Cleve:
         # would otherwise always be brief if the key is
         # present in the url.
         if brief:
-            payload["brief"] = "yes"
+            payload["brief"] = "true"
 
         res = self._get(uri, payload)
 
