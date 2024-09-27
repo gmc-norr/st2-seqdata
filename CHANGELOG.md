@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.1](https://github.com/gmc-norr/st2-seqdata/compare/v0.1.0...v0.1.1) (2024-09-27)
+
+
+### Bug Fixes
+
+* check that watch directory exists ([c797388](https://github.com/gmc-norr/st2-seqdata/commit/c797388c770236e8bd885b3772246f25f36ce369))
+* correct brief query parameter ([9f2de22](https://github.com/gmc-norr/st2-seqdata/commit/9f2de22884d46fe7d9607ef445bc8ab8a24cfd1a))
+* handle state change with a workflow ([#55](https://github.com/gmc-norr/st2-seqdata/issues/55)) ([c3f2bc3](https://github.com/gmc-norr/st2-seqdata/commit/c3f2bc3e68863703ba716991edd5a0c852f014e8))
+
 ## 0.1.0 (2024-09-05)
 
 
