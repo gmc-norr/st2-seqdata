@@ -1,6 +1,6 @@
 ---
 name: update_run_state
-description: Rule for updating the state of an existing sequencing run
+description: Rule for when the state of a run directory is updated
 pack: gmc_norr_seqdata
 enabled: true
 
@@ -13,7 +13,8 @@ criteria:
     pattern: run
 
 action:
-  ref: gmc_norr_seqdata.update_run_state
+  ref: gmc_norr_seqdata.run_state_workflow
   parameters:
     run_id: "{{ trigger.run_id }}"
     state: "{{ trigger.state }}"
+    path: "{{ trigger.path | use_none }}"

@@ -1,0 +1,21 @@
+---
+name: run_state_workflow
+runner_type: orquesta
+description: Workflow for updating run state and setting properties
+enabled: true
+entry_point: workflows/run_state_workflow.yaml
+
+parameters:
+  run_id:
+    type: string
+    description: The ID of the run
+    required: true
+  path:
+    type: string
+    description: Path of the run directory
+    required: false
+    default: null
+  state:
+    type: string
+    description: The state of the run
+    required: true
