@@ -3,7 +3,7 @@ name: update_run_path
 runner_type: python-script
 description: Update the path of a run
 enabled: true
-entry_point: update_run_state.py
+entry_point: update_run_path.py
 
 parameters:
   run_id:

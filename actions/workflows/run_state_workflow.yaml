@@ -1,0 +1,55 @@
+version: 1.0
+
+description: Update run state and set various properties accordingly
+
+input:
+  - run_id
+  - path
+  - state
+
+vars:
+  - state_result: "not executed"
+  - qc_result: "not executed"
+  - path_result: "not executed"
+
+output:
+  - run_state: <% ctx().state_result %>
+  - run_qc: <% ctx().qc_result %>
+  - run_path: <% ctx().path_result %>
+
+tasks:
+  update_run_state:
+    action: gmc_norr_seqdata.update_run_state
+    input:
+      run_id: <% ctx().run_id %>
+      state: <% ctx().state %>
+    next:
+      - when: <% succeeded() and ctx().state = "ready" %>
+        publish:
+          - state_result: <% result() %>
+        do:
+          - add_run_qc
+      - when: <% succeeded() and ctx().state = "moved" %>
+        publish:
+          - state_result: <% result() %>
+        do:
+          - update_run_path
+
+  add_run_qc:
+    action: gmc_norr_seqdata.add_run_qc
+    input:
+      run_id: <% ctx().run_id %>
+    next:
+      - publish:
+        - qc_result: <% result() %>
+        do: noop
+
+  update_run_path:
+    action: gmc_norr_seqdata.update_run_path
+    input:
+      run_id: <% ctx().run_id %>
+      path: <% ctx().path %>
+    next:
+      - publish:
+        - path_result: <% result() %>
+        do: noop
