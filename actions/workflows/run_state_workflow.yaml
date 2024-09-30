@@ -29,7 +29,7 @@ tasks:
           - state_result: <% result() %>
         do:
           - add_run_qc
-      - when: <% succeeded() and ctx().state = "moved" %>
+      - when: <% succeeded() and ctx().state = "moved" and ctx().path != null %>
         publish:
           - state_result: <% result() %>
         do:
