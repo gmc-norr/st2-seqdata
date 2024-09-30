@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/gmc-norr/st2-seqdata/compare/v0.1.1...v0.1.2) (2024-09-30)
+
+
+### Bug Fixes
+
+* don't try to update run path if it is missing ([#56](https://github.com/gmc-norr/st2-seqdata/issues/56)) ([55e2b31](https://github.com/gmc-norr/st2-seqdata/commit/55e2b314ed198668a849224179f8627084382ead))
+
 ## [0.1.1](https://github.com/gmc-norr/st2-seqdata/compare/v0.1.0...v0.1.1) (2024-09-27)
 
 
