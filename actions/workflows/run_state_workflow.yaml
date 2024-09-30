@@ -25,15 +25,13 @@ tasks:
       state: <% ctx().state %>
     next:
       - when: <% succeeded() and ctx().state = "ready" %>
-        publish:
-          - state_result: <% result() %>
         do:
           - add_run_qc
       - when: <% succeeded() and ctx().state = "moved" and ctx().path != null %>
-        publish:
-          - state_result: <% result() %>
         do:
           - update_run_path
+      - publish:
+          - state_result: <% result() %>
 
   add_run_qc:
     action: gmc_norr_seqdata.add_run_qc
