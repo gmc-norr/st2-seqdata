@@ -2,7 +2,7 @@
 ref: gmc_norr_seqdata
 name: GMC Norr Seqdata
 description: GMC Norr pack for handling sequencing data
-version: 0.1.1 # x-release-please-version
+version: 0.1.2 # x-release-please-version
 python_versions:
   - "3"
 author: Niklas Mähler
