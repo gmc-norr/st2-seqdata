@@ -2,6 +2,8 @@
 
 ## [0.2.0](https://github.com/gmc-norr/st2-seqdata/compare/v0.1.2...v0.2.0) (2024-10-01)
 
+This release is an update in order to match the cleve API changes that were introduced in v0.3.0.
+As a consequence, this release is not compatible with cleve < v0.3.0.
 
 ### Features
 
