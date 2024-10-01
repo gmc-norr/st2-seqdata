@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/gmc-norr/st2-seqdata/compare/v0.1.2...v0.2.0) (2024-10-01)
+
+
+### Features
+
+* adapt to cleve API changes ([#58](https://github.com/gmc-norr/st2-seqdata/issues/58)) ([f5e4aff](https://github.com/gmc-norr/st2-seqdata/commit/f5e4affcc496597d06d648a49b96a66c80ee3c70))
+
 ## [0.1.2](https://github.com/gmc-norr/st2-seqdata/compare/v0.1.1...v0.1.2) (2024-09-30)
 
 
