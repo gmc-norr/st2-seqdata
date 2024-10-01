@@ -353,11 +353,11 @@ class IlluminaDirectorySensor(PollingSensor):
                     directory_type=DirectoryType.RUN)
 
             # Find any new samplesheets
-            samplesheet_info = rundir.get("samplesheet")
-            if not samplesheet_info or not Path(samplesheet_info.get("path")).exists():
+            samplesheet_info = rundir.get("samplesheets", [])
+            if len(samplesheet_info) == 0 or not Path(samplesheet_info[-1].get("path")).exists():
                 samplesheet_modtime = None
             else:
-                mod_time_str = samplesheet_info.get("modification_time")
+                mod_time_str = samplesheet_info[-1].get("modification_time")
                 samplesheet_modtime = datetime.strptime(
                     mod_time_str,
                     "%Y-%m-%dT%H:%M:%S.%fZ",

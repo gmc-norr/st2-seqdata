@@ -587,11 +587,11 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
             }],
-            "samplesheet": {
+            "samplesheets": [{
                 "path": str(run_directory / "SampleSheet.csv"),
                 "modification_time":
                     server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            },
+            }],
             "path": str(run_directory),
             "analysis": [],
         })
@@ -626,7 +626,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
             }],
-            "samplesheet": [],
+            "samplesheets": [],
             "path": str(run_directory),
             "analysis": [],
         })
@@ -668,12 +668,12 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
             }],
-            "samplesheet": {
+            "samplesheets": [{
                 "path": str(original_samplesheet),
                 "modification_time": modtime.replace(
                     tzinfo=datetime.timezone.utc
                 ).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            },
+            }],
             "path": str(run_directory),
             "analysis": [],
         })
@@ -775,11 +775,11 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
             }],
-            "samplesheet": {
+            "samplesheets": [{
                 "path": str(original_samplesheet),
                 "modification_time":
                     server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            },
+            }],
             "path": str(run_directory),
             "analysis": [],
         })
@@ -822,11 +822,11 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
             }],
-            "samplesheet": {
+            "samplesheets": [{
                 "path": str(run_directory / "SampleSheet_test.csv"),
                 "modification_time":
                     server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            },
+            }],
             "path": str(run_directory),
             "analysis": [],
         })
@@ -876,11 +876,11 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
             }],
-            "samplesheet": {
+            "samplesheets": [{
                 "path": str(run_directory / "SampleSheet.csv"),
                 "modification_time":
                     server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            },
+            }],
             "path": str(run_directory),
             "analysis": [],
         })
@@ -908,7 +908,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
             }],
-            "samplesheet": [],
+            "samplesheets": [],
             "path": str(run_directory1),
             "analysis": [],
         })
