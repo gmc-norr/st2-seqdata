@@ -36,3 +36,9 @@ cleve:
     api_key:
       type: string
       required: true
+
+shared_drive:
+  description: >
+    Config for the shared drive access
+  type: string
+  required: true

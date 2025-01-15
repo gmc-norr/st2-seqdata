@@ -1,0 +1,24 @@
+name: copy_interop_to_shared_drive
+description: Rule for adding an copying the IntrOp folder from a NovaSeq run to the shared drive
+pack: gmc_norr_seqdata
+enabled: true
+
+trigger:
+  type: gmc_norr_seqdata.state_change
+
+criteria:
+  trigger.directory_type:
+    type: equals
+    pattern: run
+  trigger.platform:
+    type: equals
+    pattern: NovaSeq
+  trigger.state:
+    type: equals
+    pattern: ready
+
+action:
+  ref: gmc_norr_seqdata.copy_interop_to_shared_drive
+  parameters:
+    path: "{{ trigger.path }}"
+    target_directory: "{{ trigger.target_directory }}"

@@ -1,0 +1,17 @@
+name: copy_interop_to_shared_drive
+runner_type: local-shell-script
+description: Copy the InterOp folder to the shared drive
+enabled: true
+entry_point: copy_interop_to_shared_drive.sh
+
+parameters:
+  path:
+    type: string
+    required: true
+    description: Path to sequencing data
+    position: 1
+  target_directory:
+    type: string
+    required: true
+    description: Path to shared drive
+    position: 2

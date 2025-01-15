@@ -309,7 +309,7 @@ class IlluminaDirectorySensor(PollingSensor):
         for run_id, rundir in registered_rundirs.items():
             registered_path = Path(rundir["path"])
             self._logger.debug(f"checking existing run directory: {registered_path}")
-
+            platform = rundir['platform']
             state_history = registered_rundirs[run_id].get("state_history", [])
             registered_state = None
             if state_history:
@@ -350,7 +350,10 @@ class IlluminaDirectorySensor(PollingSensor):
                     run_id=run_id,
                     path=str(registered_path),
                     state=current_state,
-                    directory_type=DirectoryType.RUN)
+                    directory_type=DirectoryType.RUN,
+                    platform=platform, 
+                    target_directory=self.config.get("shared_drive")
+                )
 
             # Find any new samplesheets
             samplesheet_info = rundir.get("samplesheets", [])
