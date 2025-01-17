@@ -351,7 +351,7 @@ class IlluminaDirectorySensor(PollingSensor):
                     path=str(registered_path),
                     state=current_state,
                     directory_type=DirectoryType.RUN,
-                    platform=platform, 
+                    platform=platform,
                     target_directory=self.config.get("shared_drive")
                 )
 
@@ -477,8 +477,7 @@ class IlluminaDirectorySensor(PollingSensor):
                         state=current_state,
                         directory_type=DirectoryType.ANALYSIS,
                         path=str(dirpath),
-                        target_directory=self.config.get("shared_drive")
-                        )
+                        target_directory=self.config.get("shared_drive"))
             else:
                 self._logger.debug(f"new analysis found: {dirpath}")
                 self._emit_trigger(
