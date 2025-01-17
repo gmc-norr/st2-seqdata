@@ -1,0 +1,17 @@
+name: copy_indexmetrics_to_shared_drive
+runner_type: local-shell-script
+description: Copy the IndexMetricsOut.bin file to the shared drive (if new analysis directory is ready)
+enabled: true
+entry_point: copy_indexmetrics_to_shared_drive.sh
+
+parameters:
+  path:
+    type: string
+    required: true
+    description: Path to sequencing data
+    position: 1
+  target_directory:
+    type: string
+    required: true
+    description: Path to shared drive
+    position: 2

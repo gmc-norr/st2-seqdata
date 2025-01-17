@@ -48,6 +48,16 @@ trigger_types:
           type: string
           description: A message associated with the state change
           required: false
+        platform:
+          type: string
+          description: The sequencing platform of the run
+          required: false
+        target_directory:
+          type: string
+          description: >
+            Path to the folder on the shared drive the run metadata 
+            should be copied to.
+          required: false       
 
   - name: new_directory
     pack: gmc_norr_seqdata
@@ -93,6 +103,12 @@ trigger_types:
           type: string
           description: A message associated with the state change
           required: false
+        target_directory:
+          type: string
+          description: >
+            Path to the folder on the shared drive the run metadata 
+            should be copied to.
+          required: false  
 
   - name: incomplete_directory
     pack: gmc_norr_seqdata
