@@ -15,3 +15,8 @@ parameters:
     required: true
     description: Path to shared drive
     position: 2
+  timeout:
+    type: integer
+    required: false
+    description: "Timeout in seconds"
+    default: 300
