@@ -1,5 +1,5 @@
 name: copy_interop_to_shared_drive
-description: Rule for adding an copying the IntrOp folder from a NovaSeq run to the shared drive
+description: Rule for copying the InterOp folder from a NovaSeq run to the shared drive
 pack: gmc_norr_seqdata
 enabled: true
 

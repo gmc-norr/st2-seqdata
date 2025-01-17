@@ -7,6 +7,4 @@ TARGETDIR=$2
 
 RUNFOLDER=$(basename $SOURCEDIR)
 
-# declare -a FILES=("CopyComplete.txt" "RTAComplete.txt" "RTAExited.txt" "RunCompletionStatus.xml" "RunInfo.xml" "RunParameters.xml" "SampleSheet.csv")
-
-rsync -azr $SOURCEDIR/InterOp $TARGETDIR/$RUNFOLDER/
+rsync -azr $SOURCEDIR/InterOp $SOURCEDIR/RunParameters.xml $SOURCEDIR/RunInfo.xml $TARGETDIR/$RUNFOLDER/
