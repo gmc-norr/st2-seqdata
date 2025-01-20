@@ -1,8 +1,8 @@
-name: copy_interop_to_shared_drive
+name: copy_indexmetrics
 runner_type: local-shell-script
-description: Copy the InterOp folder to the shared drive
+description: Copy the IndexMetricsOut.bin file to the shared drive (if new analysis directory is ready)
 enabled: true
-entry_point: copy_interop_to_shared_drive.sh
+entry_point: copy_indexmetrics.sh
 
 parameters:
   path:
@@ -15,8 +15,3 @@ parameters:
     required: true
     description: Path to shared drive
     position: 2
-  timeout:
-    type: integer
-    required: false
-    description: "Timeout in seconds"
-    default: 300
