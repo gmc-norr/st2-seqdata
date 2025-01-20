@@ -39,8 +39,8 @@ update_analysis    | Update an analysis associated with a NovaSeq sequencing run
 update_run_path    | Update the path of a run
 update_run_state   | Update the state of a run
 update_samplesheet | Update the samplesheet for a run
-copy_interop_to_shared_drive | Copy the InterOp folder of a Novaseq run to the shared drive
-copy_indexmetrics_to_shared_drive | Copy the IndexMetricsOut.bin file of an analysis to the shared drive
+copy_interop | Copy the InterOp folder of a Novaseq run to the shared drive
+copy_indexmetrics | Copy the IndexMetricsOut.bin file of an analysis to the shared drive
 
 ## Rules
 
@@ -53,9 +53,9 @@ notify_incomplete_run  | Rule for sending an email when an incomplete run direct
 update_analysis        | Rule for updating the state and summary for an existing analysis
 update_run_state       | Rule for when the state of a run directory is updated
 update_samplesheet     | Rule for updating the samplesheet for a run
-copy_interop_to_shared_drive | Rule for copying the InterOp folder of a ready Novaseq run to the shared drive
-copy_indexmetrics_to_shared_drive | Rule for copying the IndexMetricsOut.bin file when an analysis changes state to ready to the shared drive
-copy_indexmetrics_to_shared_drive_new_directory | Rule for copying the IndexMetricsOut.bin file when a new, ready analysis directory is found to the shared drive
+copy_interop | Rule for copying the InterOp folder of a ready Novaseq run to the shared drive
+copy_indexmetrics | Rule for copying the IndexMetricsOut.bin file when an analysis changes state to ready to the shared drive
+copy_indexmetrics_new_directory | Rule for copying the IndexMetricsOut.bin file when a new, ready analysis directory is found to the shared drive
 
 ## Sensors
 
