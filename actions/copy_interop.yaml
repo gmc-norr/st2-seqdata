@@ -19,4 +19,4 @@ parameters:
     type: integer
     required: false
     description: "Timeout in seconds"
-    default: 300
+    default: 900
