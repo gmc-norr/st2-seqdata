@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/gmc-norr/st2-seqdata/compare/v0.2.0...v0.3.0) (2025-01-20)
+
+
+### Features
+
+* copy interop to shared drive ([#61](https://github.com/gmc-norr/st2-seqdata/issues/61)) ([99db947](https://github.com/gmc-norr/st2-seqdata/commit/99db9479f8f2cdbedb9c31b569e087093080181e))
+
+
+### Bug Fixes
+
+* copy_interop timeout increased ([#63](https://github.com/gmc-norr/st2-seqdata/issues/63)) ([002e0ee](https://github.com/gmc-norr/st2-seqdata/commit/002e0ee33c89a04dfb84d974a537dcc101836fc7))
+* Make timeout argument longer. ([#64](https://github.com/gmc-norr/st2-seqdata/issues/64)) ([5e8298b](https://github.com/gmc-norr/st2-seqdata/commit/5e8298b4e1863e8f2c929c869c8d22ed2961d729))
+
 ## [0.2.0](https://github.com/gmc-norr/st2-seqdata/compare/v0.1.2...v0.2.0) (2024-10-01)
 
 This release is an update in order to match the cleve API changes that were introduced in v0.3.0.
