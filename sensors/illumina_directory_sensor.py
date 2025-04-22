@@ -9,12 +9,12 @@ from cleve_service import Cleve
 
 
 PLATFORMS = {
-    "NovaSeq": {
+    "NovaSeq X Plus": {
         "serial_tag": "InstrumentSerialNumber",
         "serial_pattern": "LH",
         "ready_marker": "CopyComplete.txt",
     },
-    "NextSeq": {
+    "NextSeq 5x0": {
         "serial_tag": "InstrumentID",
         "serial_pattern": "NB",
         "ready_marker": "CopyComplete.txt",
@@ -75,8 +75,8 @@ class IlluminaDirectorySensor(PollingSensor):
         moved_runs = self._check_new_runs(registered_rundirs)
         self._check_existing_runs(registered_rundirs, moved_runs)
 
-        runs = self.cleve.get_runs(brief=False, platform="NovaSeq", state="ready")
-        self._logger.debug(f"found {len(runs)} ready NovaSeq runs")
+        runs = self.cleve.get_runs(brief=False, platform="NovaSeq X Plus", state="ready")
+        self._logger.debug(f"found {len(runs)} ready NovaSeq X Plus runs")
         for run_id, run in runs.items():
             self._check_for_analysis(
                 run_id,

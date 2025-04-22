@@ -196,7 +196,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             }
         )
 
-        self._write_basic_runparams(run_dirs[0], "NovaSeq", "run1")
+        self._write_basic_runparams(run_dirs[0], "NovaSeq X Plus", "run1")
 
         # Should trigger an incomplete directory with incomplete state since
         # RunInfo.xml does not yet exist.
@@ -224,7 +224,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             }
         )
 
-        self._write_basic_runinfo(run_dirs[0], "NovaSeq", "run1")
+        self._write_basic_runinfo(run_dirs[0], "NovaSeq X Plus", "run1")
 
         # Should trigger a new directory with pending state since
         # CopyComplete.txt does not yet exist
@@ -242,12 +242,12 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         # Add the run to the database
         self.cleve.add_run("run1", {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{"state": "new", "time": time.localtime()}],
             "path": str(run_dirs[0]),
         })
 
-        (run_dirs[0] / PLATFORMS["NovaSeq"]["ready_marker"]).touch()
+        (run_dirs[0] / PLATFORMS["NovaSeq X Plus"]["ready_marker"]).touch()
 
         # Should trigger a state change
         self.sensor.poll()
@@ -267,7 +267,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run = {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [
                 {
                     "state": "moved",
@@ -292,7 +292,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run = {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{"state": "new", "time": time.localtime()}],
             "path": str(run_directory),
         }
@@ -322,13 +322,13 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
     def test_moved_run_directory_within_watched_directory(self):
         run_directory = Path(self.watch_directories[0].name) / "run1_moved"
         run_directory.mkdir()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
         (run_directory / "CopyComplete.txt").touch()
 
         self.cleve.add_run("run1", {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{"state": "ready", "time": time.localtime()}],
             "path": str(Path(self.watch_directories[0].name) / "run1"),
         })
@@ -366,13 +366,13 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
     def test_moved_run_directory_with_state_change(self):
         run_directory = Path(self.watch_directories[0].name) / "run1_moved"
         run_directory.mkdir()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
         (run_directory / "CopyComplete.txt").touch()
 
         run = {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{"state": "new", "time": time.localtime()}],
             "path": str(Path(self.watch_directories[0].name) / "run1"),
         }
@@ -413,8 +413,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
 
         self.sensor.poll()
         self.assertEqual(len(self.get_dispatched_triggers()), 1)
@@ -430,7 +430,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         self.cleve.add_run("run1", {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state": DirectoryState.READY,
             "path": str(Path(self.watch_directories[0].name) / "run1"),
         })
@@ -451,8 +451,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
 
         analysis_directory = run_directory / "Analysis" / "1"
         analysis_directory.mkdir(parents=True)
@@ -485,7 +485,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         # Add the run to the database
         self.cleve.add_run("run1", {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
@@ -528,8 +528,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
 
         analysis_directory = run_directory / "Analysis" / "1"
         analysis_directory.mkdir(parents=True)
@@ -560,8 +560,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
         original_samplesheet = (run_directory / "SampleSheet.csv")
         new_samplesheet = (run_directory / "SampleSheet_new.csv")
 
@@ -582,7 +582,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         self.cleve.add_run("run1", {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
@@ -613,15 +613,15 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
         original_samplesheet = (run_directory / "SampleSheet.csv")
 
         original_samplesheet.touch()
 
         self.cleve.add_run("run1", {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
@@ -645,8 +645,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
         original_samplesheet = (run_directory / "SampleSheet.csv")
 
         original_samplesheet.touch()
@@ -663,7 +663,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         # Modification time in database is UTC
         self.cleve.add_run("run1", {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
@@ -738,8 +738,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
         original_samplesheet = (run_directory / "SampleSheet.csv")
         old_samplesheet = (run_directory / "SampleSheet_old.csv")
 
@@ -770,7 +770,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         self.cleve.add_run("run1", {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
@@ -794,8 +794,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
         samplesheet = (run_directory / "SampleSheet.csv")
 
         # Sample sheet modification time is older than what is
@@ -817,7 +817,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         # Registered sample sheet does not exist on disk.
         self.cleve.add_run("run1", {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
@@ -847,8 +847,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
         samplesheet = (run_directory / "SampleSheet.csv")
 
         samplesheet.touch()
@@ -871,7 +871,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
 
         self.cleve.add_run("run1", {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
@@ -896,14 +896,14 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory2.mkdir()
         (run_directory1 / "CopyComplete.txt").touch()
         (run_directory2 / "CopyComplete.txt").touch()
-        self._write_basic_runparams(run_directory1, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory1, "NovaSeq", "run1")
-        self._write_basic_runparams(run_directory2, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory2, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory1, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory1, "NovaSeq X Plus", "run1")
+        self._write_basic_runparams(run_directory2, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory2, "NovaSeq X Plus", "run1")
 
         self.cleve.add_run("run1", {
             "run_id": "run1",
-            "platform": "NovaSeq",
+            "platform": "NovaSeq X Plus",
             "state_history": [{
                 "state": DirectoryState.READY,
                 "time": time.localtime(),
@@ -943,8 +943,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
         (run_directory / "CopyComplete.txt").touch()
-        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
-        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
 
         # No RunCompletionStatus.xml should yield READY
         self.assertEqual(

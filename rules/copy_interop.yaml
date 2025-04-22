@@ -12,7 +12,7 @@ criteria:
     pattern: run
   trigger.platform:
     type: equals
-    pattern: NovaSeq
+    pattern: "NovaSeq X Plus"
   trigger.state:
     type: equals
     pattern: ready
