@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/gmc-norr/st2-seqdata/compare/v0.3.0...v0.3.1) (2025-04-22)
+
+
+### Bug Fixes
+
+* Update platform names to match cleve ([5e791f8](https://github.com/gmc-norr/st2-seqdata/commit/5e791f809489951a6ef1c9da07cb2cc25e81248a))
+* update platform names to match cleve ([#65](https://github.com/gmc-norr/st2-seqdata/issues/65)) ([5e791f8](https://github.com/gmc-norr/st2-seqdata/commit/5e791f809489951a6ef1c9da07cb2cc25e81248a))
+
 ## [0.3.0](https://github.com/gmc-norr/st2-seqdata/compare/v0.2.0...v0.3.0) (2025-01-20)
 
 
