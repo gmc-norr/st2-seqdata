@@ -843,6 +843,46 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             },
         )
 
+    def test_delete_samplesheet(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq", "run1")
+
+        server_modtime = datetime.datetime(
+            2024, 9, 1, 10, 0,
+            tzinfo=datetime.timezone.utc,
+        )
+
+        # Registered sample sheet does not exist on disk.
+        self.cleve.add_run("run1", {
+            "run_id": "run1",
+            "platform": "NovaSeq",
+            "state_history": [{
+                "state": DirectoryState.READY,
+                "time": time.localtime(),
+            }],
+            "samplesheet": {
+                "path": str(run_directory / "SampleSheet_test.csv"),
+                "modification_time":
+                    server_modtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            },
+            "path": str(run_directory),
+            "analysis": [],
+        })
+
+        # The missing sample sheet should be replaced with the one
+        # that actually exists.
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.delete_samplesheet",
+            payload={
+                "run_id": "run1",
+            },
+        )
+
     def test_new_samplesheet_with_microsecond_difference(self):
         run_directory = Path(self.watch_directories[0].name) / "run1"
         run_directory.mkdir()
