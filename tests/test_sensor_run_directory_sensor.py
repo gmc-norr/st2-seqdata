@@ -28,6 +28,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             tempfile.TemporaryDirectory(),
         ]
 
+        self.target_directory = tempfile.TemporaryDirectory()
         # Mock the cleve service
         self.cleve = Cleve(key="supersecretapikey")
         self.cleve.runs = {}
@@ -54,6 +55,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             "illumina_directories": [Path(d.name) for d in self.watch_directories],
             "cleve_service": self.cleve,
             "notification_email": ["me@mail.com"],
+            "shared_drive": self.target_directory.name,
         })
 
     def _get_runs(
@@ -258,6 +260,8 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "path": str(run_dirs[0]),
                 "state": DirectoryState.READY,
                 "directory_type": DirectoryType.RUN,
+                "platform": "NovaSeq X Plus",
+                "target_directory": self.target_directory.name,
             }
         )
 
@@ -521,6 +525,7 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "analysis_id": "1",
                 "state": DirectoryState.READY,
                 "directory_type": DirectoryType.ANALYSIS,
+                "target_directory": self.target_directory.name,
             }
         )
 
@@ -553,6 +558,40 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "path": str(analysis_directory),
                 "state": DirectoryState.PENDING,
                 "directory_type": DirectoryType.ANALYSIS,
+            }
+        )
+
+    def test_analysis_directory_ready_at_the_same_time_as_run_ready(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
+
+        analysis_directory = run_directory / "Analysis" / "1"
+        analysis_directory.mkdir(parents=True)
+        (analysis_directory / "CopyComplete.txt").touch()
+
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 2)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.new_directory",
+            payload={
+                "run_id": "run1",
+                "path": str(run_directory),
+                "state": DirectoryState.READY,
+                "directory_type": DirectoryType.RUN,
+            }
+        )
+
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.new_directory",
+            payload={
+                "run_id": "run1",
+                "path": str(analysis_directory),
+                "state": DirectoryState.READY,
+                "directory_type": DirectoryType.ANALYSIS,
+                "target_directory": self.target_directory.name,
             }
         )
 
