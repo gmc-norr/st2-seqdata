@@ -435,7 +435,7 @@ class IlluminaDirectorySensor(PollingSensor):
 
         analyses = {}
         for a in existing_analyses or []:
-            analyses[a["path"]] = a
+            analyses[a["analysis_id"]] = a
 
         root, analysis_dirs, _ = next(os.walk(analysis_path))
 
@@ -459,11 +459,11 @@ class IlluminaDirectorySensor(PollingSensor):
                     f"found detailed summary at {detailed_summary}"
                 )
 
-            if str(dirpath) in analyses:
+            if analysis_id in analyses:
                 self._logger.debug(
                     "analysis dir has been registered for run, checking state"
                 )
-                registered_state = analyses[str(dirpath)]["state"]
+                registered_state = analyses[analysis_id]["state"]
                 current_state = self.analysis_directory_state(dirpath)
                 if registered_state != current_state:
                     self._logger.debug(f"{dirpath} changed state "
