@@ -17,7 +17,7 @@ parameters:
     type: string
     description: The state of the run
     required: false
-  path
+  path:
     type: string
     description: The path to the analysis directory
     required: false
