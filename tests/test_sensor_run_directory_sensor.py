@@ -632,6 +632,39 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
             },
         )
 
+    def test_new_pending_analysis_directory(self):
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
+
+        self.cleve.add_run("run1", {
+            "run_id": "run1",
+            "platform": "NovaSeq X Plus",
+            "state_history": [
+                {"state": DirectoryState.READY, "time": time.time()},
+            ],
+            "path": str(Path(self.watch_directories[0].name) / "run1"),
+            "analysis": [],
+        })
+
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 0)
+
+        analysis_directory = run_directory / "Analysis" / "1"
+        analysis_directory.mkdir(parents=True)
+
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 1)
+        self.assertTriggerDispatched(
+            trigger="gmc_norr_seqdata.new_directory",
+            payload={
+                "run_id": "run1",
+                "directory_type": DirectoryType.ANALYSIS,
+                "state": DirectoryState.PENDING,
+            }
+         )
 
     def test_analysis_directory_at_the_same_time_as_run_ready(self):
         run_directory = Path(self.watch_directories[0].name) / "run1"
