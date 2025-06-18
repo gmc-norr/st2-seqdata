@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/gmc-norr/st2-seqdata/compare/v0.3.1...v0.4.0) (2025-06-18)
+
+
+### Features
+
+* properly detect moved analysis directories ([#71](https://github.com/gmc-norr/st2-seqdata/issues/71)) ([b6c7612](https://github.com/gmc-norr/st2-seqdata/commit/b6c7612c3dc8eebfa0bd4b3953dbbf6575bc95ec))
+
 ## [0.3.1](https://github.com/gmc-norr/st2-seqdata/compare/v0.3.0...v0.3.1) (2025-04-22)
 
 
