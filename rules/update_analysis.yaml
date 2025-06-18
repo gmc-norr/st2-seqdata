@@ -17,5 +17,6 @@ action:
   parameters:
     run_id: "{{ trigger.run_id }}"
     analysis_id: "{{ trigger.analysis_id }}"
+    path: "{{ trigger.path }}"
     state: "{{ trigger.state }}"
     summary_file: "{{ trigger.summary_file | use_none }}"
