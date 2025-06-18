@@ -1,11 +1,14 @@
 from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
+from st2common import log as logging
 from st2reactor.sensor.base import PollingSensor
 from typing import Dict, List, Optional, Union
 import xml.etree.ElementTree as ET
 
 from cleve_service import Cleve
+
+LOG = logging.getLogger(__name__)
 
 
 PLATFORMS = {
@@ -46,7 +49,6 @@ class IlluminaDirectorySensor(PollingSensor):
 
     def __init__(self, sensor_service, config=None, poll_interval=60):
         super(IlluminaDirectorySensor, self).__init__(sensor_service, config, poll_interval)
-        self._logger = self.sensor_service.get_logger(__name__)
         self._watched_directories = self.config.get("illumina_directories", [])
 
         if "cleve_service" in self.config:
@@ -59,9 +61,9 @@ class IlluminaDirectorySensor(PollingSensor):
                 self.config.get("cleve", {}).get("port"),
             )
 
-        self._logger.debug("watched directories:")
+        LOG.debug("watched directories:")
         for wd in self._watched_directories:
-            self._logger.debug(f"  - {wd}")
+            LOG.debug(f"  - {wd}")
 
     def setup(self):
         pass
@@ -76,7 +78,7 @@ class IlluminaDirectorySensor(PollingSensor):
         self._check_existing_runs(registered_rundirs, moved_runs)
 
         runs = self.cleve.get_runs(brief=False, platform="NovaSeq X Plus", state="ready")
-        self._logger.debug(f"found {len(runs)} ready NovaSeq X Plus runs")
+        LOG.debug(f"found {len(runs)} ready NovaSeq X Plus runs")
         for run_id, run in runs.items():
             self._check_for_analysis(
                 run_id,
@@ -150,7 +152,7 @@ class IlluminaDirectorySensor(PollingSensor):
                               run_id: str,
                               path: Union[Path, str],
                               duplicate_path: Union[Path, str]) -> None:
-        self._logger.warning(f"run {run_id} with path "
+        LOG.warning(f"run {run_id} with path "
                              f"{path} was also "
                              f"found at {duplicate_path}")
         payload = dict(
@@ -166,7 +168,7 @@ class IlluminaDirectorySensor(PollingSensor):
                 **payload,
             )
         else:
-            self._logger.debug("trigger instance with the same "
+            LOG.debug("trigger instance with the same "
                                "payload found within the last week, "
                                "won't emit new trigger")
 
@@ -174,11 +176,11 @@ class IlluminaDirectorySensor(PollingSensor):
                                      rundir: Path,
                                      state: str = DirectoryState.INCOMPLETE,
                                      message: str = "") -> None:
-        self._logger.debug(f"incomplete run directory: {rundir}")
-        self._logger.debug(f"reason: {message}")
+        LOG.debug(f"incomplete run directory: {rundir}")
+        LOG.debug(f"reason: {message}")
         email = self.config.get("notification_email", [])
         if not email:
-            self._logger.info("no email addresses provided, "
+            LOG.info("no email addresses provided, "
                               "no trigger dispatched")
             return
         payload = dict(
@@ -195,7 +197,7 @@ class IlluminaDirectorySensor(PollingSensor):
                 **payload,
             )
         else:
-            self._logger.debug("trigger instance with the same "
+            LOG.debug("trigger instance with the same "
                                "payload found within the last week, "
                                "won't emit new trigger")
 
@@ -208,16 +210,16 @@ class IlluminaDirectorySensor(PollingSensor):
         """
         moved_runs = []
         for wd in self._watched_directories:
-            self._logger.debug(f"checking watch directory: {wd}")
+            LOG.debug(f"checking watch directory: {wd}")
             if not os.path.exists(wd):
-                self._logger.error(f"directory {wd} does not exist")
+                LOG.error(f"directory {wd} does not exist")
                 continue
 
             root, dirnames, _ = next(os.walk(wd))
 
             for dirname in dirnames:
                 dirpath = Path(root) / str(dirname)
-                self._logger.debug(f"looking at {dirpath}")
+                LOG.debug(f"looking at {dirpath}")
                 try:
                     run_id = self.get_run_id(dirpath)
                 except IOError as e:
@@ -257,7 +259,7 @@ class IlluminaDirectorySensor(PollingSensor):
                         str(e),
                     )
                     continue
-                self._logger.debug(f"identified run as {run_id}")
+                LOG.debug(f"identified run as {run_id}")
 
                 if run_id in registered_rundirs:
                     registered_path = Path(registered_rundirs[run_id]["path"])
@@ -270,7 +272,7 @@ class IlluminaDirectorySensor(PollingSensor):
                         str(registered_path) != str(dirpath) and \
                             registered_state != DirectoryState.MOVED:
                         # directory has been moved within the watched directories
-                        self._logger.debug(f"{dirpath} moved from {registered_path}")
+                        LOG.debug(f"{dirpath} moved from {registered_path}")
                         self._emit_trigger(
                             "state_change",
                             run_id=run_id,
@@ -282,7 +284,7 @@ class IlluminaDirectorySensor(PollingSensor):
                         self._handle_duplicate_run(run_id, registered_path, dirpath)
                     continue
 
-                self._logger.debug(f"new directory found: {dirpath}")
+                LOG.debug(f"new directory found: {dirpath}")
                 self._emit_trigger(
                     "new_directory",
                     run_id=run_id,
@@ -308,7 +310,7 @@ class IlluminaDirectorySensor(PollingSensor):
         """
         for run_id, rundir in registered_rundirs.items():
             registered_path = Path(rundir["path"])
-            self._logger.debug(f"checking existing run directory: {registered_path}")
+            LOG.debug(f"checking existing run directory: {registered_path}")
             platform = rundir['platform']
             state_history = registered_rundirs[run_id].get("state_history", [])
             registered_state = None
@@ -341,7 +343,7 @@ class IlluminaDirectorySensor(PollingSensor):
             current_state = self.run_directory_state(registered_path)
 
             if registered_state != current_state:
-                self._logger.debug(
+                LOG.debug(
                     f"{registered_path} changed state from "
                     f"{registered_state} to {current_state}"
                 )
@@ -447,7 +449,7 @@ class IlluminaDirectorySensor(PollingSensor):
                 # Most likely not a real analysis directory, ignore it
                 continue
 
-            self._logger.debug(f"looking at analysis at {dirpath}")
+            LOG.debug(f"looking at analysis at {dirpath}")
             detailed_summary = list((dirpath / "Data" / "summary")
                                     .glob("*/detailed_summary.json"))
 
@@ -455,20 +457,20 @@ class IlluminaDirectorySensor(PollingSensor):
                 detailed_summary = None
             else:
                 detailed_summary = str(detailed_summary[0])
-                self._logger.debug(
+                LOG.debug(
                     f"found detailed summary at {detailed_summary}"
                 )
 
             if analysis_id in analyses:
-                self._logger.debug(
+                LOG.debug(
                     "analysis dir has been registered for run, checking state"
                 )
                 registered_state = analyses[analysis_id]["state"]
                 current_state = self.analysis_directory_state(dirpath)
                 if registered_state != current_state:
-                    self._logger.debug(f"{dirpath} changed state "
-                                       f"from {registered_state} "
-                                       f"to {current_state}")
+                    LOG.debug(f"{dirpath} changed state "
+                        f"from {registered_state} "
+                        f"to {current_state}")
                     self._emit_trigger(
                         "state_change",
                         run_id=run_id,
@@ -479,7 +481,7 @@ class IlluminaDirectorySensor(PollingSensor):
                         path=str(dirpath),
                         target_directory=self.config.get("shared_drive"))
             else:
-                self._logger.debug(f"new analysis found: {dirpath}")
+                LOG.debug(f"new analysis found: {dirpath}")
                 self._emit_trigger(
                     "new_directory",
                     run_id=run_id,
@@ -523,7 +525,7 @@ class IlluminaDirectorySensor(PollingSensor):
         :return: The run ID.
         :rtype: str
         """
-        self._logger.debug(f"looking for run id in {path}")
+        LOG.debug(f"looking for run id in {path}")
         runparamsfile = path / "RunParameters.xml"
         if not runparamsfile.is_file():
             raise IOError(f"{runparamsfile} does not exist")
@@ -545,7 +547,7 @@ class IlluminaDirectorySensor(PollingSensor):
         else:
             raise ValueError("Could not identify platform")
 
-        self._logger.debug(f"platform is {platform}")
+        LOG.debug(f"platform is {platform}")
 
         for x in ("RunID", "RunId"):
             run_id = root.find(x)
