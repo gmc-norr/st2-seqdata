@@ -79,3 +79,21 @@ class UpdateAnalyisTestCase(BaseActionTestCase):
                 "Authorization": "secret",
             },
         )
+
+    def test_update_analysis_path(self):
+        cleve_service.requests.patch = Mock(side_effect=mock_response)
+        self.action.run(
+            run_id="run1",
+            analysis_id="1",
+            path="/path/to/analysis/1",
+        )
+
+        cleve_service.requests.patch.assert_called_with(
+            "http://localhost:8080/api/runs/run1/analysis/1",
+            files={
+                "path": (None, "/path/to/analysis/1"),
+            },
+            headers={
+                "Authorization": "secret",
+            },
+        )
