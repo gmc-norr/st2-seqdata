@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import datetime
 import os
 from pathlib import Path
+import shutil
 from st2tests.base import BaseSensorTestCase
 import tempfile
 import time
@@ -523,6 +524,114 @@ class IlluminaDirectorySensorTestCase(BaseSensorTestCase):
                 "directory_type": DirectoryType.ANALYSIS,
             }
         )
+
+    def test_moved_run_directory_with_analysis(self):
+        """
+        The state of analyses is updated if they are moved
+        """
+        run_directory = Path(self.watch_directories[0].name) / "run1"
+        run_directory.mkdir()
+        (run_directory / "CopyComplete.txt").touch()
+        self._write_basic_runparams(run_directory, "NovaSeq X Plus", "run1")
+        self._write_basic_runinfo(run_directory, "NovaSeq X Plus", "run1")
+
+        analysis_directory = run_directory / "Analysis" / "1"
+        analysis_directory.mkdir(parents=True)
+        (analysis_directory / "CopyComplete.txt").touch()
+
+        # New run directory and new analysis directory
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 2)
+        # print(self.get_dispatched_triggers())
+        self.assertTriggerDispatched(
+            "gmc_norr_seqdata.new_directory",
+            {
+                "run_id": "run1",
+                "state": DirectoryState.READY,
+                "directory_type": DirectoryType.RUN,
+            },
+        )
+        self.assertTriggerDispatched(
+            "gmc_norr_seqdata.new_directory",
+            {
+                "run_id": "run1",
+                "state": DirectoryState.READY,
+                "directory_type": DirectoryType.ANALYSIS,
+            },
+        )
+
+        self.cleve.add_run("run1", {
+            "run_id": "run1",
+            "platform": "NovaSeq X Plus",
+            "state_history": [
+                {"state": DirectoryState.READY, "time": time.time()},
+            ],
+            "path": str(Path(self.watch_directories[0].name) / "run1"),
+            "analysis": [],
+        })
+
+        self.cleve.add_analysis(
+            run_id="run1",
+            analysis={
+                "analysis_id": "1",
+                "path": str(analysis_directory),
+                "state": DirectoryState.READY,
+            }
+        )
+
+        # Move the run directory
+        new_run_directory = Path(tempfile.mkdtemp()) / "run1"
+        shutil.move(str(run_directory), str(new_run_directory))
+        self.assertFalse(run_directory.exists())
+
+        # Should only detect the moved run directory
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 3)
+
+        self.assertTriggerDispatched(
+            "gmc_norr_seqdata.state_change",
+            {
+                "run_id": "run1",
+                "state": DirectoryState.MOVED,
+                "directory_type": DirectoryType.RUN,
+            },
+        )
+
+        # Update the state of the run based on the previous trigger
+        self.cleve.update_run_state(run_id="run1", state=DirectoryState.MOVED)
+        self.cleve.update_run_path(run_id="run1", path=new_run_directory)
+        # self.cleve.update_analysis(run_id="run1", analysis_id="1", state=DirectoryState.MOVED)
+
+        # Run should have gotten a state of ready
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 4)
+        self.assertTriggerDispatched(
+            "gmc_norr_seqdata.state_change",
+            {
+                "run_id": "run1",
+                "state": DirectoryState.READY,
+                "path": str(new_run_directory),
+                "directory_type": DirectoryType.RUN,
+            },
+        )
+
+        # Update the state of the run based on the previous trigger
+        self.cleve.update_run_state(run_id="run1", state=DirectoryState.READY)
+
+        # Moved analysis should be detected
+        self.sensor.poll()
+        self.assertEqual(len(self.get_dispatched_triggers()), 5)
+        self.assertTriggerDispatched(
+            "gmc_norr_seqdata.state_change",
+            {
+                "run_id": "run1",
+                "analysis_id": "1",
+                "path": str(new_run_directory / "Analysis" / "1"),
+                "state": DirectoryState.MOVED,
+                "directory_type": DirectoryType.ANALYSIS,
+            },
+        )
+
 
     def test_analysis_directory_at_the_same_time_as_run_ready(self):
         run_directory = Path(self.watch_directories[0].name) / "run1"
