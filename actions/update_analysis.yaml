@@ -17,6 +17,10 @@ parameters:
     type: string
     description: The state of the run
     required: false
+  path
+    type: string
+    description: The path to the analysis directory
+    required: false
   summary_file:
     type: string
     description: The path to the summary JSON

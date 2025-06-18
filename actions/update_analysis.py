@@ -20,10 +20,12 @@ class UpdateAnalysisAction(Action):
             run_id: str,
             analysis_id: str,
             state: str,
+            path: str,
             summary_file: Optional[str] = None) -> Dict[str, Any]:
         return self.cleve.update_analysis(
             run_id=run_id,
             analysis_id=analysis_id,
+            path=path,
             state=state,
             summary_file=summary_file,
         )

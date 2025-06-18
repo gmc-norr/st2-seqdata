@@ -205,6 +205,7 @@ class Cleve:
                         run_id: str,
                         analysis_id: str,
                         state: Optional[str],
+                        path: Optional[str],
                         summary_file: Optional[str]) -> Dict[str, Any]:
         if self.key is None:
             raise CleveError("no API key provided")
@@ -216,6 +217,8 @@ class Cleve:
 
         if state is not None:
             files["state"] = (None, state)
+        if path is not None:
+            files["path"] = (None, path)
 
         if summary_file is not None:
             files["summary_file"] = (
