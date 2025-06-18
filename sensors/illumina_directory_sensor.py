@@ -463,10 +463,25 @@ class IlluminaDirectorySensor(PollingSensor):
 
             if analysis_id in analyses:
                 LOG.debug(
-                    "analysis dir has been registered for run, checking state"
+                    "analysis has been registered for run, checking state"
                 )
                 registered_state = analyses[analysis_id]["state"]
+                registered_path = analyses[analysis_id]["path"]
+                LOG.debug(f"registered analysis state={registered_state} path={registered_path}")
+                if str(dirpath) != analyses[analysis_id]["path"] and registered_state != DirectoryState.MOVED:
+                    LOG.debug("analysis has been moved")
+                    self._emit_trigger(
+                        "state_change",
+                        run_id=run_id,
+                        analysis_id=analysis_id,
+                        summary_file=detailed_summary,
+                        state=DirectoryState.MOVED,
+                        directory_type=DirectoryType.ANALYSIS,
+                        path=str(dirpath),
+                        target_directory=self.config.get("shared_drive"))
+                    continue
                 current_state = self.analysis_directory_state(dirpath)
+                LOG.debug(f"current state of analysis: {current_state}")
                 if registered_state != current_state:
                     LOG.debug(f"{dirpath} changed state "
                         f"from {registered_state} "
@@ -638,6 +653,8 @@ class IlluminaDirectorySensor(PollingSensor):
         return False
 
     def analysis_directory_state(self, path: Path) -> str:
+        if not path.is_dir():
+            return DirectoryState.MOVED
         copycomplete = path / "CopyComplete.txt"
         if copycomplete.is_file():
             return DirectoryState.READY
