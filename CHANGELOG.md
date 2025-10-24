@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/gmc-norr/st2-seqdata/compare/v0.4.0...v0.4.1) (2025-10-24)
+
+
+### Bug Fixes
+
+* catch StopIteration when checking analysis dir ([#74](https://github.com/gmc-norr/st2-seqdata/issues/74)) ([2c74f93](https://github.com/gmc-norr/st2-seqdata/commit/2c74f9308bc85ec722510f1e5a1fcabf8e727326))
+
 ## [0.4.0](https://github.com/gmc-norr/st2-seqdata/compare/v0.3.1...v0.4.0) (2025-06-18)
 
 
