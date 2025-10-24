@@ -439,7 +439,11 @@ class IlluminaDirectorySensor(PollingSensor):
         for a in existing_analyses or []:
             analyses[a["analysis_id"]] = a
 
-        root, analysis_dirs, _ = next(os.walk(analysis_path))
+        try:
+            root, analysis_dirs, _ = next(os.walk(analysis_path))
+        except StopIteration:
+            LOG.warn(f"StopIteration when checking analysis directory {analysis_path} for run {run_id}")
+            return
 
         for analysis_dir in analysis_dirs:
             dirpath = Path(root) / str(analysis_dir)
