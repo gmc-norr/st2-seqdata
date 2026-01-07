@@ -1,15 +1,4 @@
 ---
-illumina_directories:
-  description: >
-    The directories in which to watch for new Illumina sequencing runs.
-  required: true
-  type: array
-  items:
-    description: >
-      The directory to watch for new run directories in.
-    type: string
-    required: true
-
 notification_email:
   description: >
     The email addresses to send notifications to.
@@ -21,24 +10,8 @@ notification_email:
     type: string
     format: email
 
-cleve:
-  description: >
-    Config for the accessing cleve (https://github.com/gmc-norr/cleve)
-  type: object
-  required: true
-  properties:
-    host:
-      type: string
-      required: true
-    port:
-      type: number
-      required: true
-    api_key:
-      type: string
-      required: true
-
 shared_drive:
   description: >
     Config for the shared drive access
   type: string
-  required: true
+  required: false
