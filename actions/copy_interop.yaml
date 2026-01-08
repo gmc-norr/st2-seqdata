@@ -13,6 +13,8 @@ parameters:
   target_directory:
     type: string
     required: true
+    immutable: true
+    default: "{{ config_context.shared_drive }}"
     description: Path to shared drive
     position: 2
   timeout:
