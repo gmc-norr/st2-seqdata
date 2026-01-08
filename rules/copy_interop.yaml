@@ -4,15 +4,9 @@ pack: gmc_norr_seqdata
 enabled: true
 
 trigger:
-  type: gmc_norr_seqdata.state_change
+  type: cleve.run_state_update
 
 criteria:
-  trigger.directory_type:
-    type: equals
-    pattern: run
-  trigger.platform:
-    type: equals
-    pattern: "NovaSeq X Plus"
   trigger.state:
     type: equals
     pattern: ready
@@ -21,4 +15,3 @@ action:
   ref: gmc_norr_seqdata.copy_interop
   parameters:
     path: "{{ trigger.path }}"
-    target_directory: "{{ trigger.target_directory }}"
