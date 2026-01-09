@@ -14,4 +14,4 @@ shared_drive:
   description: >
     Config for the shared drive access
   type: string
-  required: false
+  required: true
