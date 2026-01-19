@@ -1,24 +1,28 @@
 name: copy_interop
-runner_type: local-shell-script
-description: Copy the InterOp folder to the shared drive
+runner_type: orquesta
+description: Copy the InterOp folder to a shared drive
 enabled: true
-entry_point: copy_interop.sh
+entry_point: workflows/copy_interop.yaml
 
 parameters:
-  path:
+  run_path:
     type: string
     required: true
-    description: Path to sequencing data
-    position: 1
-  target_directory:
+    description: Path to sequencing run
+  platform:
     type: string
     required: true
-    immutable: true
-    default: "{{ config_context.shared_drive }}"
-    description: Path to shared drive
-    position: 2
-  timeout:
-    type: integer
-    required: false
-    description: "Timeout in seconds"
-    default: 900
+    description: Platform that was used for the sequencing
+  destinations:
+    type: array
+    required: true
+    description: Destination paths for InterOp data
+    items:
+      type: object
+      properties:
+        platform:
+          type: string
+          required: true
+        path:
+          type: string
+          required: true

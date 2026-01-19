@@ -1,0 +1,67 @@
+version: 1.0
+description: >
+  Copy interop files from a sequencing run to a shared directory
+  that can be accessed by more people.
+
+input:
+  - run_path
+  - platform
+  - destinations
+
+vars:
+  - err:
+  - msg:
+  - basename:
+  - destination:
+
+tasks:
+  determine_destination:
+    action: core.noop
+    next:
+      - when: <% succeeded() %>
+        publish:
+          - destination: <% ctx(destinations).where($.platform = ctx(platform)) %>
+        do: check_destination
+
+  check_destination:
+    action: core.noop
+    next:
+      - when: <% ctx(destination).len() = 1 %>
+        publish:
+          - destination: <% ctx(destination).first().path %>
+        do: basename
+      - when: <% ctx(destination).len() > 1 %>
+        publish:
+          - err: "multiple matches for platform: <% ctx(platform) %>"
+        do: fail
+      - when: <% ctx(destination).len() = 0 %>
+        publish:
+          - err: "platform not defined in config: <% ctx(platform) %>"
+        do: fail
+
+  basename:
+    action: core.local
+    input:
+      cmd: "basename <% ctx(run_path) %>"
+    next:
+      - when: <% succeeded() %>
+        publish:
+          - basename: <% result().stdout %>
+        do: copy_base_interop
+  
+  copy_base_interop:
+    action: core.local
+    input:
+      cmd: "rsync -aP <% ctx(run_path) %> --include='<% ctx(basename) %>' --include='*.xml' --include='InterOp***' --exclude='*' <% ctx(destination) %>"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "rsync failed: <% result().stderr %>"
+        do: fail
+      - when: <% succeeded() %>
+        publish:
+          - msg: "data synced to <% ctx(destination) %>/<% ctx(basename) %>"
+
+output:
+  - message: <% ctx(msg) %>
+  - error: <% ctx(err) %>

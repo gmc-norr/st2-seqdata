@@ -13,5 +13,14 @@ notification_email:
 shared_drive:
   description: >
     Config for the shared drive access
-  type: string
+  type: array
   required: true
+  items:
+    type: object
+    properties:
+      platform:
+        type: string
+        required: true
+      path:
+        type: string
+        required: true
