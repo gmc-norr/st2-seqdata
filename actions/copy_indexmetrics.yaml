@@ -1,17 +1,24 @@
 name: copy_indexmetrics
-runner_type: local-shell-script
-description: Copy the IndexMetricsOut.bin file to the shared drive (if new analysis directory is ready)
+runner_type: orquesta
+description: Copy the IndexMetricsOut.bin file to the shared drive 
 enabled: true
-entry_point: copy_indexmetrics.sh
+entry_point: workflows/copy_indexmetrics.yaml
 
 parameters:
-  path:
+  analysis_id:
     type: string
     required: true
-    description: Path to sequencing data
-    position: 1
-  target_directory:
-    type: string
+    description: ID of the analysis
+  destinations:
+    type: array
     required: true
-    description: Path to shared drive
-    position: 2
+    description: Destination paths for InterOp data
+    items:
+      type: object
+      properties:
+        platform:
+          type: string
+          required: true
+        path:
+          type: string
+          required: true
