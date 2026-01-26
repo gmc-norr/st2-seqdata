@@ -101,6 +101,18 @@ tasks:
       - when: <% succeeded() %>
         publish:
           - basename: <% result().stdout %>
+        do: create_destination
+
+  create_destination:
+    action: core.local
+    input:
+      cmd: "mkdir -p <% ctx(destination) %>/<% ctx(basename) %>/InterOp/"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "failed to create destination directory"
+        do: fail
+      - when: <% succeeded() %>
         do: copy_indexmetrics
 
   copy_indexmetrics:
