@@ -14,4 +14,5 @@ parameters:
     required: false
     description: >
       Base directory where the index metrics should be copied to. If missing,
-      an attempt to fetch it from the pack config is made.
+      an attempt to fetch it from the pack config is made. If the directory
+      doesn't exist it will be created.

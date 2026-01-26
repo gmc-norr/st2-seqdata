@@ -13,16 +13,10 @@ parameters:
     type: string
     required: true
     description: Platform that was used for the sequencing
-  destinations:
-    type: array
-    required: true
-    description: Destination paths for InterOp data
-    items:
-      type: object
-      properties:
-        platform:
-          type: string
-          required: true
-        path:
-          type: string
-          required: true
+  destination:
+    type: string
+    required: false
+    description: >
+      Base directory where the index metrics should be copied to. If missing,
+      an attempt to fetch it from the pack config is made. If the directory
+      doesn't exist it will be created.

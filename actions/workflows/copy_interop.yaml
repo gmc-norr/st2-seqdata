@@ -6,38 +6,39 @@ description: >
 input:
   - run_path
   - platform
-  - destinations
+  - destination
 
 vars:
   - err:
   - msg:
   - basename:
-  - destination:
 
 tasks:
-  determine_destination:
-    action: core.noop
-    next:
-      - when: <% succeeded() %>
-        publish:
-          - destination: <% ctx(destinations).where($.platform = ctx(platform)) %>
-        do: check_destination
-
   check_destination:
     action: core.noop
     next:
-      - when: <% ctx(destination).len() = 1 %>
-        publish:
-          - destination: <% ctx(destination).first().path %>
+      - when: <% succeeded() and ctx(destination) = null %>
+        do: get_destination
+      - when: <% succeeded() and ctx(destination) != null %>
         do: basename
-      - when: <% ctx(destination).len() > 1 %>
+
+  get_destination:
+    action: gmc_norr_seqdata.get_interop_destination
+    input:
+      platform: <% ctx(platform) %>
+    next:
+      - when: <% failed() %>
         publish:
-          - err: "multiple matches for platform: <% ctx(platform) %>"
+          - error: "failed to get destination from pack config"
         do: fail
-      - when: <% ctx(destination).len() = 0 %>
+      - when: <% succeeded() and result().result = null %>
         publish:
-          - err: "platform not defined in config: <% ctx(platform) %>"
+          - error: "destination not defined for platform: <% ctx(platform) %>"
         do: fail
+      - when: <% succeeded() and result().result != null %>
+        publish:
+          - destination: <% result().result %>
+        do: basename
 
   basename:
     action: core.local
@@ -47,8 +48,20 @@ tasks:
       - when: <% succeeded() %>
         publish:
           - basename: <% result().stdout %>
-        do: copy_base_interop
+        do: create_destination
   
+  create_destination:
+    action: core.local
+    input:
+      cmd: "mkdir -p <% ctx(destination) %>"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "failed to create destination directory"
+        do: fail
+      - when: <% succeeded() %>
+        do: copy_base_interop
+
   copy_base_interop:
     action: core.local
     input:
