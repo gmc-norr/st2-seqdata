@@ -22,16 +22,15 @@ notification_email:
 
 ref | description
 --- | ---
-copy_interop | Copy the InterOp folder of a Novaseq run to the shared drive
-copy_indexmetrics | Copy the IndexMetricsOut.bin file of an analysis to the shared drive
+copy_interop | Copy the InterOp folder to a shared drive
+copy_indexmetrics | Copy the IndexMetricsOut.bin file to the shared drive 
 
 ## Rules
 
 ref | description
 --- | ---
-copy_interop | Rule for copying the InterOp folder of a ready Novaseq run to the shared drive
-copy_indexmetrics | Rule for copying the IndexMetricsOut.bin file when an analysis changes state to ready to the shared drive
-copy_indexmetrics_new_directory | Rule for copying the IndexMetricsOut.bin file when a new, ready analysis directory is found to the shared drive
+copy_interop | Rule for copying the InterOp folder from a sequencing run to the shared drive
+copy_indexmetrics | Rule for copying the IndexMetricsOut.bin file from a BCLConvert run to the InterOp folder on the shared drive
 
 ## Running tests
 

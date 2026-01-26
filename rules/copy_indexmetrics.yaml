@@ -1,6 +1,8 @@
 ---
 name: copy_indexmetrics
-description: Rule for copying the IndexMetricsOut.bin file from a NovaSeq run to the InterOp folder on the shared drive
+description: >
+  Rule for copying the IndexMetricsOut.bin file from a BCLConvert run to the
+  InterOp folder on the shared drive
 pack: gmc_norr_seqdata
 enabled: true
 
