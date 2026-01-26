@@ -6,7 +6,7 @@ description: >
 
 input:
   - analysis_id
-  - destinations
+  - destination
 
 vars:
   - err:
@@ -16,7 +16,6 @@ vars:
   - run_path:
   - platform:
   - basename:
-  - destination:
 
 tasks:
   get_indexmetrics_file:
@@ -27,11 +26,10 @@ tasks:
       type: interop
       name: IndexMetricsOut.bin
     next:
-      - when: <% succeeded() and result().result.body.len() = 1 %>
+      - when: <% failed() %>
         publish:
-          - indexmetrics: <% result().result.body.first().path %>
-          - run_id: <% result().result.body.first().parent_id %>
-        do: get_run_info
+          - err: <% result().result.body.error %>
+        do: fail
       - when: <% succeeded() and result().result.body.len() = 0 %>
         publish:
           - err: "no index metrics file found"
@@ -40,22 +38,17 @@ tasks:
         publish:
           - err: "more than one file found, don't know which one to use"
         do: fail
-      - when: <% failed() %>
+      - when: <% succeeded() and result().result.body.len() = 1 %>
         publish:
-          - err: <% result().result.body.error %>
-        do: fail
+          - indexmetrics: <% result().result.body.first().path %>
+          - run_id: <% result().result.body.first().parent_id %>
+        do: get_run_info
 
   get_run_info:
     action: cleve.get_runs
     input:
       run_id: <% ctx(run_id) %>
     next:
-      - when: <% succeeded() and result().result.body.metadata.count = 1 %>
-        publish:
-          - run_path: <% result().result.body.runs.first().path %>
-          - platform: <% result().result.body.runs.first().platform %>
-          - destination: <% ctx(destinations).where($.platform = ctx(platform)) %>
-        do: check_destination
       - when: <% succeeded() and result().result.body.metadata.count = 0 %>
         publish:
           - error: "run not found"
@@ -64,28 +57,47 @@ tasks:
         publish:
           - error: "more than one run found"
         do: fail
+      - when: <% succeeded() and result().result.body.metadata.count = 1 %>
+        publish:
+          - run_path: <% result().result.body.runs.first().path %>
+          - platform: <% result().result.body.runs.first().platform %>
+        do: check_destination
 
   check_destination:
     action: core.noop
     next:
-      - when: <% ctx(destination).len() = 1 %>
-        publish:
-          - destination: <% ctx(destination).first().path %>
+      - when: <% succeeded() and ctx(destination) != null %>
         do: basename
-      - when: <% ctx(destination).len() > 1 %>
+      - when: <% succeeded() and ctx(destination) = null %>
+        do: get_destination
+
+  get_destination:
+    action: gmc_norr_seqdata.get_interop_destination
+    input:
+      platform: <% ctx(platform) %>
+    next:
+      - when: <% failed() %>
         publish:
-          - err: "multiple matches for platform: <% ctx(platform) %>"
+          - error: "failed to get destination from pack config"
         do: fail
-      - when: <% ctx(destination).len() = 0 %>
+      - when: <% succeeded() and result().result = null %>
         publish:
-          - err: "platform not defined in config: <% ctx(platform) %>"
+          - error: "destination not defined for platform: <% ctx(platform) %>"
         do: fail
+      - when: <% succeeded() and result().result != null %>
+        publish:
+          - destination: <% result().result %>
+        do: basename
 
   basename:
     action: core.local
     input:
       cmd: "basename <% ctx(run_path) %>"
     next:
+      - when: <% failed() %>
+        publish:
+          - error: "failed to get name of run directory"
+        do: fail
       - when: <% succeeded() %>
         publish:
           - basename: <% result().stdout %>

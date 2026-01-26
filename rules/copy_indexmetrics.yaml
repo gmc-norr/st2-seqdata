@@ -21,4 +21,3 @@ action:
   ref: gmc_norr_seqdata.copy_indexmetrics
   parameters:
     analysis_id: "{{ trigger.analysis_id }}"
-    destinations: "{{ config_context.shared_drive | tojson }}"
