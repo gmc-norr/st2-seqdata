@@ -22,15 +22,15 @@ notification_email:
 
 ref | description
 --- | ---
-copy_interop | Copy the InterOp folder to a shared drive
-copy_indexmetrics | Copy the IndexMetricsOut.bin file to the shared drive 
+copy_interop | Copy the InterOp folder from a sequencing run
+copy_indexmetrics | Copy the IndexMetricsOut.bin file
 
 ## Rules
 
 ref | description
 --- | ---
-copy_interop | Rule for copying the InterOp folder from a sequencing run to the shared drive
-copy_indexmetrics | Rule for copying the IndexMetricsOut.bin file from a BCLConvert run to the InterOp folder on the shared drive
+copy_interop | Rule for copying the InterOp folder from a sequencing run to a shared location
+copy_indexmetrics | Rule for copying the IndexMetricsOut.bin file from a BCLConvert run to the InterOp folder in a shared location
 
 ## Running tests
 

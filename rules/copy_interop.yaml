@@ -1,8 +1,8 @@
 ---
 name: copy_interop
 description: >
-  Rule for copying the InterOp folder from a sequencing run to the
-  shared drive
+  Rule for copying the InterOp folder from a sequencing run to a
+  shared directory
 pack: gmc_norr_seqdata
 enabled: true
 
