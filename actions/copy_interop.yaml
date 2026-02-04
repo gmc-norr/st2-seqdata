@@ -1,22 +1,22 @@
 name: copy_interop
-runner_type: local-shell-script
-description: Copy the InterOp folder to the shared drive
+runner_type: orquesta
+description: Copy the InterOp folder from a sequencing run
 enabled: true
-entry_point: copy_interop.sh
+entry_point: workflows/copy_interop.yaml
 
 parameters:
-  path:
+  run_path:
     type: string
     required: true
-    description: Path to sequencing data
-    position: 1
-  target_directory:
+    description: Path to sequencing run
+  platform:
     type: string
     required: true
-    description: Path to shared drive
-    position: 2
-  timeout:
-    type: integer
+    description: Platform that was used for the sequencing
+  destination:
+    type: string
     required: false
-    description: "Timeout in seconds"
-    default: 900
+    description: >
+      Base directory where the index metrics should be copied to. If missing,
+      an attempt to fetch it from the pack config is made. If the directory
+      doesn't exist it will be created.

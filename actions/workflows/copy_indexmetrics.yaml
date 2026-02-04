@@ -1,0 +1,133 @@
+version: 1.0
+name: copy_indexmetrics
+description: >
+  Copy indexmetrics files from BCLConvert to a shared directory
+  that can be accessed by more people.
+
+input:
+  - analysis_id
+  - destination
+
+vars:
+  - err:
+  - msg:
+  - indexmetrics:
+  - run_id:
+  - run_path:
+  - platform:
+  - basename:
+
+tasks:
+  get_indexmetrics_file:
+    action: cleve.get_analysis_files
+    input:
+      analysis_id: <% ctx(analysis_id) %>
+      level: run
+      type: interop
+      name: IndexMetricsOut.bin
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: <% result().result.body.error %>
+        do: fail
+      - when: <% succeeded() and result().result.body.len() = 0 %>
+        publish:
+          - err: "no index metrics file found"
+        do: fail
+      - when: <% succeeded() and result().result.body.len() > 1 %>
+        publish:
+          - err: "more than one file found, don't know which one to use"
+        do: fail
+      - when: <% succeeded() and result().result.body.len() = 1 %>
+        publish:
+          - indexmetrics: <% result().result.body.first().path %>
+          - run_id: <% result().result.body.first().parent_id %>
+        do: get_run_info
+
+  get_run_info:
+    action: cleve.get_runs
+    input:
+      run_id: <% ctx(run_id) %>
+    next:
+      - when: <% succeeded() and result().result.body.metadata.count = 0 %>
+        publish:
+          - error: "run not found"
+        do: fail
+      - when: <% succeeded() and result().result.body.metadata.count > 1 %>
+        publish:
+          - error: "more than one run found"
+        do: fail
+      - when: <% succeeded() and result().result.body.metadata.count = 1 %>
+        publish:
+          - run_path: <% result().result.body.runs.first().path %>
+          - platform: <% result().result.body.runs.first().platform %>
+        do: check_destination
+
+  check_destination:
+    action: core.noop
+    next:
+      - when: <% succeeded() and ctx(destination) != null %>
+        do: basename
+      - when: <% succeeded() and ctx(destination) = null %>
+        do: get_destination
+
+  get_destination:
+    action: gmc_norr_seqdata.get_interop_destination
+    input:
+      platform: <% ctx(platform) %>
+    next:
+      - when: <% failed() %>
+        publish:
+          - error: "failed to get destination from pack config"
+        do: fail
+      - when: <% succeeded() and result().result = null %>
+        publish:
+          - error: "destination not defined for platform: <% ctx(platform) %>"
+        do: fail
+      - when: <% succeeded() and result().result != null %>
+        publish:
+          - destination: <% result().result %>
+        do: basename
+
+  basename:
+    action: core.local
+    input:
+      cmd: "basename <% ctx(run_path) %>"
+    next:
+      - when: <% failed() %>
+        publish:
+          - error: "failed to get name of run directory"
+        do: fail
+      - when: <% succeeded() %>
+        publish:
+          - basename: <% result().stdout %>
+        do: create_destination
+
+  create_destination:
+    action: core.local
+    input:
+      cmd: "mkdir -p <% ctx(destination) %>/<% ctx(basename) %>/InterOp/"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "failed to create destination directory"
+        do: fail
+      - when: <% succeeded() %>
+        do: copy_indexmetrics
+
+  copy_indexmetrics:
+    action: core.local
+    input:
+      cmd: "rsync -aP <% ctx(indexmetrics) %> <% ctx(destination) %>/<% ctx(basename) %>/InterOp/"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "rsync failed: <% result().stderr %>"
+        do: fail
+      - when: <% succeeded() %>
+        publish:
+          - msg: "indexmetrics synced to <% ctx(destination) %>/<% ctx(basename) %>/InterOp"
+
+output:
+  - message: <% ctx(msg) %>
+  - error: <% ctx(err) %>

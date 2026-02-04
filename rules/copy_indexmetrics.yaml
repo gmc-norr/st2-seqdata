@@ -1,22 +1,23 @@
 ---
 name: copy_indexmetrics
-description: Rule for copying the IndexMetricsOut.bin file from a NovaSeq run to the InterOp folder on the shared drive
+description: >
+  Rule for copying the IndexMetricsOut.bin file from a BCLConvert run to the
+  run InterOp folder in a shared directory
 pack: gmc_norr_seqdata
 enabled: true
 
 trigger:
-  type: gmc_norr_seqdata.state_change
+  type: cleve.analysis_state_update
 
 criteria:
-  trigger.directory_type:
-    type: equals
-    pattern: analysis
   trigger.state:
     type: equals
     pattern: ready
+  trigger.software:
+    type: contains
+    pattern: BCLConvert
 
 action:
   ref: gmc_norr_seqdata.copy_indexmetrics
   parameters:
-    path: "{{ trigger.path }}"
-    target_directory: "{{ trigger.target_directory }}"
+    analysis_id: "{{ trigger.analysis_id }}"

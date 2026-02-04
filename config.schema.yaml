@@ -10,8 +10,17 @@ notification_email:
     type: string
     format: email
 
-shared_drive:
+interop_destinations:
   description: >
-    Config for the shared drive access
-  type: string
+    Sequencing platform specific locations where interop data should be copied.
+  type: array
   required: true
+  items:
+    type: object
+    properties:
+      platform:
+        type: string
+        required: true
+      path:
+        type: string
+        required: true

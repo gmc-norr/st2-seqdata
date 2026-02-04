@@ -1,0 +1,80 @@
+version: 1.0
+description: >
+  Copy interop files from a sequencing run to a shared directory
+  that can be accessed by more people.
+
+input:
+  - run_path
+  - platform
+  - destination
+
+vars:
+  - err:
+  - msg:
+  - basename:
+
+tasks:
+  check_destination:
+    action: core.noop
+    next:
+      - when: <% succeeded() and ctx(destination) = null %>
+        do: get_destination
+      - when: <% succeeded() and ctx(destination) != null %>
+        do: basename
+
+  get_destination:
+    action: gmc_norr_seqdata.get_interop_destination
+    input:
+      platform: <% ctx(platform) %>
+    next:
+      - when: <% failed() %>
+        publish:
+          - error: "failed to get destination from pack config"
+        do: fail
+      - when: <% succeeded() and result().result = null %>
+        publish:
+          - error: "destination not defined for platform: <% ctx(platform) %>"
+        do: fail
+      - when: <% succeeded() and result().result != null %>
+        publish:
+          - destination: <% result().result %>
+        do: basename
+
+  basename:
+    action: core.local
+    input:
+      cmd: "basename <% ctx(run_path) %>"
+    next:
+      - when: <% succeeded() %>
+        publish:
+          - basename: <% result().stdout %>
+        do: create_destination
+  
+  create_destination:
+    action: core.local
+    input:
+      cmd: "mkdir -p <% ctx(destination) %>"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "failed to create destination directory"
+        do: fail
+      - when: <% succeeded() %>
+        do: copy_base_interop
+
+  copy_base_interop:
+    action: core.local
+    input:
+      cmd: "rsync -aP <% ctx(run_path) %> --include='<% ctx(basename) %>' --include='*.xml' --include='InterOp***' --exclude='*' <% ctx(destination) %>"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "rsync failed: <% result().stderr %>"
+        do: fail
+      - when: <% succeeded() %>
+        publish:
+          - msg: "data synced to <% ctx(destination) %>/<% ctx(basename) %>"
+
+output:
+  - message: <% ctx(msg) %>
+  - error: <% ctx(err) %>
