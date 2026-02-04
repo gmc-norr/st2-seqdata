@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/gmc-norr/st2-seqdata/compare/v0.4.1...v0.5.0) (2026-02-04)
+
+
+### Features
+
+* pack simplification ([#76](https://github.com/gmc-norr/st2-seqdata/issues/76)) ([a9b20b0](https://github.com/gmc-norr/st2-seqdata/commit/a9b20b0ee1cec6d042b37d7948e3064b0821a40c))
+* use new cleve triggers for syncing interop files ([#77](https://github.com/gmc-norr/st2-seqdata/issues/77)) ([271364f](https://github.com/gmc-norr/st2-seqdata/commit/271364f56670e586937e4b1160defbc81510e235))
+
 ## [0.4.1](https://github.com/gmc-norr/st2-seqdata/compare/v0.4.0...v0.4.1) (2025-10-24)
 
 
