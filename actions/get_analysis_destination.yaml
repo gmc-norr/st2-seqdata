@@ -1,0 +1,14 @@
+---
+name: get_analysis_destination
+runner_type: python-script
+description: >
+  Get the path to the location where analysis output files should be shared based
+  on the sequencing platform.
+enabled: true
+entry_point: get_analysis_destination.py
+
+parameters:
+  platform:
+    type: string
+    required: true
+    description: The sequencing platform
