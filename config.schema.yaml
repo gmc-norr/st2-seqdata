@@ -25,9 +25,9 @@ interop_destinations:
         type: string
         required: true
 
-analysis_destinations:
+run_destinations:
   description: >
-    Sequencing platform specific locations where analysis data should be moved.
+    Sequencing platform specific locations where sequecning run data should be moved.
   type: array
   required: true
   items:
