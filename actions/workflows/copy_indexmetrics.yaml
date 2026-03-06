@@ -72,8 +72,9 @@ tasks:
         do: get_destination
 
   get_destination:
-    action: gmc_norr_seqdata.get_interop_destination
+    action: gmc_norr_seqdata.get_file_destination
     input:
+      type: interop
       platform: <% ctx(platform) %>
     next:
       - when: <% failed() %>

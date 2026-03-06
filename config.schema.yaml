@@ -24,3 +24,18 @@ interop_destinations:
       path:
         type: string
         required: true
+
+run_destinations:
+  description: >
+    Sequencing platform specific locations where sequecning run data should be moved.
+  type: array
+  required: true
+  items:
+    type: object
+    properties:
+      platform:
+        type: string
+        required: true
+      path:
+        type: string
+        required: true

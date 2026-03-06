@@ -23,8 +23,9 @@ tasks:
         do: basename
 
   get_destination:
-    action: gmc_norr_seqdata.get_interop_destination
+    action: gmc_norr_seqdata.get_file_destination
     input:
+      type: interop
       platform: <% ctx(platform) %>
     next:
       - when: <% failed() %>
@@ -49,7 +50,7 @@ tasks:
         publish:
           - basename: <% result().stdout %>
         do: create_destination
-  
+
   create_destination:
     action: core.local
     input:

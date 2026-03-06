@@ -1,0 +1,21 @@
+---
+name: get_file_destination
+runner_type: python-script
+description: >
+  Get the path to the location where a specific type of file should be shared based
+  on the sequencing platform.
+enabled: true
+entry_point: get_file_destination.py
+
+parameters:
+  type:
+    type: string
+    required: true
+    description: The type of file to get destination for
+    enum:
+      - interop
+      - run
+  platform:
+    type: string
+    required: true
+    description: The sequencing platform
