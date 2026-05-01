@@ -51,11 +51,11 @@ tasks:
     next:
       - when: <% succeeded() and result().result.body.metadata.count = 0 %>
         publish:
-          - error: "run not found"
+          - err: "run not found"
         do: fail
       - when: <% succeeded() and result().result.body.metadata.count > 1 %>
         publish:
-          - error: "more than one run found"
+          - err: "more than one run found"
         do: fail
       - when: <% succeeded() and result().result.body.metadata.count = 1 %>
         publish:
@@ -79,11 +79,11 @@ tasks:
     next:
       - when: <% failed() %>
         publish:
-          - error: "failed to get destination from pack config"
+          - err: "failed to get destination from pack config"
         do: fail
       - when: <% succeeded() and result().result = null %>
         publish:
-          - error: "destination not defined for platform: <% ctx(platform) %>"
+          - err: "destination not defined for platform: <% ctx(platform) %>"
         do: fail
       - when: <% succeeded() and result().result != null %>
         publish:
@@ -97,7 +97,7 @@ tasks:
     next:
       - when: <% failed() %>
         publish:
-          - error: "failed to get name of run directory"
+          - err: "failed to get name of run directory"
         do: fail
       - when: <% succeeded() %>
         publish:
