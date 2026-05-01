@@ -30,11 +30,11 @@ tasks:
     next:
       - when: <% failed() %>
         publish:
-          - error: "failed to get destination from pack config"
+          - err: "failed to get destination from pack config"
         do: fail
       - when: <% succeeded() and result().result = null %>
         publish:
-          - error: "destination not defined for platform: <% ctx(platform) %>"
+          - err: "destination not defined for platform: <% ctx(platform) %>"
         do: fail
       - when: <% succeeded() and result().result != null %>
         publish:
