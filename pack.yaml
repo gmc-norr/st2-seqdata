@@ -5,5 +5,7 @@ description: GMC Norr pack for handling sequencing data
 version: 0.4.1 # x-release-please-version
 python_versions:
   - "3"
+dependencies:
+  - https://github.com/gmc-norr/st2-cleve=1.0.1
 author: Niklas Mähler
 email: niklas.mahler@regionvasterbotten.se
