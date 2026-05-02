@@ -40,6 +40,7 @@ ref | description
 --- | ---
 copy_interop | Copy the InterOp folder from a sequencing run
 copy_indexmetrics | Copy the IndexMetricsOut.bin file
+get_file_destination | Get the destination paths for runs and interop files (internal)
 
 ## Rules
 
