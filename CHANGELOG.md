@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.0.0](https://github.com/gmc-norr/st2-seqdata/compare/v0.4.1...v1.0.0) (2026-05-02)
+
+
+### Features
+
+* make `get interop destination` into a general `get file destination` action ([#81](https://github.com/gmc-norr/st2-seqdata/issues/81)) ([fd542e0](https://github.com/gmc-norr/st2-seqdata/commit/fd542e0366c0b644acfff1206a7b7a5cf6bd92c9))
+* pack simplification ([#76](https://github.com/gmc-norr/st2-seqdata/issues/76)) ([a9b20b0](https://github.com/gmc-norr/st2-seqdata/commit/a9b20b0ee1cec6d042b37d7948e3064b0821a40c))
+* use new cleve triggers for syncing interop files ([#77](https://github.com/gmc-norr/st2-seqdata/issues/77)) ([271364f](https://github.com/gmc-norr/st2-seqdata/commit/271364f56670e586937e4b1160defbc81510e235))
+
+
+### Bug Fixes
+
+* add cleve dependency ([9003f32](https://github.com/gmc-norr/st2-seqdata/commit/9003f323d75379468943a20f95ebd6c64686c3a0))
+* corrected error variable for copying interop files ([#82](https://github.com/gmc-norr/st2-seqdata/issues/82)) ([7fc5c9b](https://github.com/gmc-norr/st2-seqdata/commit/7fc5c9bcaea5494ccbe9bbb1f6f5965530d8b2ea))
+
+
+### Miscellaneous Chores
+
+* release 1.0.0 ([#84](https://github.com/gmc-norr/st2-seqdata/issues/84)) ([d3f8353](https://github.com/gmc-norr/st2-seqdata/commit/d3f8353afad9d812ecf1ca02ab6229c5ef418c05))
+
 ## [0.4.1](https://github.com/gmc-norr/st2-seqdata/compare/v0.4.0...v0.4.1) (2025-10-24)
 
 
