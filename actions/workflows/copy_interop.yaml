@@ -67,6 +67,7 @@ tasks:
     action: core.local
     input:
       cmd: "rsync -aP <% ctx(run_path) %> --include='<% ctx(basename) %>' --include='*.xml' --include='InterOp***' --exclude='*' <% ctx(destination) %>"
+      timeout: 900
     next:
       - when: <% failed() %>
         publish:
