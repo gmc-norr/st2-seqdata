@@ -1,0 +1,26 @@
+name: copy_interop
+runner_type: orquesta
+description: Copy the bam folder from an analysis
+enabled: true
+entry_point: workflows/copy_bam.yaml
+
+parameters:
+  bam_path:
+    type: string
+    required: true
+    description: Path to sequencing run
+  run_id:
+    type: string
+    required: true
+    description: Run that generated the fastq files that the analysis is baseed on
+  pipeline:
+    type: string
+    required: true
+    description: Pipeline that generated
+  destination:
+    type: string
+    required: false
+    description: >
+      Base directory where the bam files should be copied to. If missing,
+      an attempt to fetch it from the pack config is made. If the directory
+      doesn't exist it will be created.
