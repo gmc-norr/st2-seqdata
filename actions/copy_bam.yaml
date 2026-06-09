@@ -1,4 +1,4 @@
-name: copy_interop
+name: copy_bam
 runner_type: orquesta
 description: Copy the bam folder from an analysis
 enabled: true
