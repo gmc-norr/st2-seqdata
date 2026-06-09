@@ -39,3 +39,18 @@ run_destinations:
       path:
         type: string
         required: true
+
+bam_destinations:
+  description: >
+    Pipeline specific locations where bam files should be moved.
+  type: array
+  required: true
+  items:
+    type: object
+    properties:
+      platform:
+        type: string
+        required: true
+      path:
+        type: string
+        required: true
