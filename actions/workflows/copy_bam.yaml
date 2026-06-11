@@ -34,7 +34,7 @@ tasks:
         do: fail
       - when: <% succeeded() and result().result = null %>
         publish:
-          - err: "destination not defined for platform: <% ctx(platform) %>"
+          - err: "destination not defined for platform: <% ctx(pipeline) %>"
         do: fail
       - when: <% succeeded() and result().result != null %>
         publish:
