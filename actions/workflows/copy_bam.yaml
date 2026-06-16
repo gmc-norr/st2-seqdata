@@ -56,7 +56,7 @@ tasks:
   copy_bam_folder:
     action: core.local
     input:
-      cmd: "rsync -aP <% ctx(bam_path) %> <% ctx(destination) %>"
+      cmd: "rsync -a <% ctx(bam_path) %> <% ctx(destination) %>"
       timeout: 9000
     next:
       - when: <% failed() %>
