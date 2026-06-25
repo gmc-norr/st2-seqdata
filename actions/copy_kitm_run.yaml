@@ -1,0 +1,26 @@
+name: copy_kitm_run
+runner_type: orquesta
+description: If run has kitm in run description, copy run to shared destination
+enabled: true
+entry_point: workflows/copy_kitm_run.yaml
+
+parameters:
+  run_path:
+    type: string
+    required: true
+    description: Path to sequencing run
+  run_id:
+    type: string
+    required: true
+    description: ID of the sequencing run
+  platform:
+    type: string
+    required: true
+    description: Platform that was used for the sequencing
+  destination:
+    type: string
+    required: false
+    description: >
+      Base directory where the run should be copied to. If missing,
+      an attempt to fetch it from the pack config is made. If the directory
+      doesn't exist it will be created.

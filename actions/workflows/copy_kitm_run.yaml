@@ -1,0 +1,93 @@
+version: 1.0
+description: >
+  Check if run is KITM, if so, copy run to a shared directory.
+
+input:
+  - run_path
+  - run_id
+  - platform
+  - destination
+
+vars:
+  - err:
+  - msg:
+
+tasks:
+  get_run_description:
+    action: cleve.get_samplesheet
+    input:
+      run_id: <% ctx(run_id) %>
+      section: Header
+      key: RunDescription
+    next:
+      - when: "{{ succeeded() and 'kitm' in result().get('result').get('body') | lower }}"
+        publish:
+          - source: <% ctx(run_path)%>/
+          - file_type: run
+        do:
+          get_destination
+      - when: "{{ succeeded() and 'kitm' not in result().get('result').get('body') | lower }}"
+        publish:
+          - msg: "Not a KITM run."
+        do:
+          noop
+      - when: "{{ failed() and result().get('result').get('body').get('error') == 'key RunDescription not found in section Header' }}"
+        publish:
+          - msg: "No RunDescription in samplesheet"
+        do:
+          noop
+      - when: "{{ failed() }}"
+        publish:
+          - err: "Failed to get samplesheet data from Cleve.
+              {{ result() | to_json_string }}"
+        do:
+          fail
+
+  get_destination:
+    action: gmc_norr_seqdata.get_file_destination
+    input:
+      type: run
+      platform: <% ctx(platform) %>
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "failed to get destination from pack config"
+        do: fail
+      - when: <% succeeded() and result().result = null %>
+        publish:
+          - err: "destination not defined for platform: <% ctx(platform) %>"
+        do: fail
+      - when: <% succeeded() and result().result != null %>
+        publish:
+          - destination: <% result().result %>
+        do: create_destination
+
+  create_destination:
+    action: core.local
+    input:
+      cmd: "mkdir -p <% ctx(destination) %>"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "failed to create destination directory"
+        do: fail
+      - when: <% succeeded() %>
+        do: copy_run
+
+  copy_run:
+    action: core.local
+    input:
+      cmd: "rsync -a <% ctx(run_path) %> <% ctx(destination) %>"
+      timeout: 9000
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "rsync failed: <% result().stderr %>"
+        do: fail
+      - when: <% succeeded() %>
+        publish:
+          - msg: "data synced to <% ctx(destination) %>/<% ctx(run_id) %>"
+
+output:
+  - message: <% ctx(msg) %>
+  - error: <% ctx(err) %>
