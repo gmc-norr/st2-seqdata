@@ -1,0 +1,25 @@
+---
+name: copy_kitm_run
+description: >
+  Rule for copying checking if Miseq i100 runs are KITM,
+  and copying it to a shared directory
+pack: gmc_norr_seqdata
+enabled: true
+
+trigger:
+  type: cleve.run_state_update
+
+criteria:
+  trigger.state:
+    type: equals
+    pattern: ready
+  trigger.platform:
+    type: equals
+    pattern: 'MiSeq i100'
+
+action:
+  ref: gmc_norr_seqdata.copy_kitm_run
+  parameters:
+    run_id: "{{ trigger.run_id }}"
+    run_path: "{{ trigger.path }}"
+    platform: "{{ trigger.platform }}"
