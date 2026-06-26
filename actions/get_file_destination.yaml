@@ -15,6 +15,7 @@ parameters:
     enum:
       - interop
       - run
+      - fastq
   platform:
     type: string
     required: true

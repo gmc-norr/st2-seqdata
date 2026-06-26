@@ -1,0 +1,11 @@
+name: copy_lymphotrack
+runner_type: orquesta
+description: Copy the fastq direcotry for a lymphotrack run
+enabled: true
+entry_point: workflows/copy_lymphotrack.yaml
+
+parameters:
+  analysis_id:
+    type: string
+    required: true
+    description: ID of the analysis
