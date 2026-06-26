@@ -21,9 +21,6 @@ tasks:
       key: RunDescription
     next:
       - when: "{{ succeeded() and 'kitm' in result().get('result').get('body') | lower }}"
-        publish:
-          - source: <% ctx(run_path)%>/
-          - file_type: run
         do:
           get_destination
       - when: "{{ succeeded() and 'kitm' not in result().get('result').get('body') | lower }}"
@@ -47,7 +44,7 @@ tasks:
     action: gmc_norr_seqdata.get_file_destination
     input:
       type: run
-      platform: <% ctx(platform) %>
+      platform: <% ctx(platform) %> # KITM maybe? Just needs to match config
     next:
       - when: <% failed() %>
         publish:
@@ -60,6 +57,7 @@ tasks:
       - when: <% succeeded() and result().result != null %>
         publish:
           - destination: <% result().result %>
+          - run_path: "{{ ctx().run_path.rstrip('/') }}"
         do: create_destination
 
   create_destination:
