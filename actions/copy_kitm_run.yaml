@@ -13,10 +13,6 @@ parameters:
     type: string
     required: true
     description: ID of the sequencing run
-  platform:
-    type: string
-    required: true
-    description: Platform that was used for the sequencing
   destination:
     type: string
     required: false

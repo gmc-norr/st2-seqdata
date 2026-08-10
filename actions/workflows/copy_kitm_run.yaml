@@ -44,7 +44,7 @@ tasks:
     action: gmc_norr_seqdata.get_file_destination
     input:
       type: run
-      platform: <% ctx(platform) %> # KITM maybe? Just needs to match config
+      platform: KITM
     next:
       - when: <% failed() %>
         publish:
