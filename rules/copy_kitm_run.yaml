@@ -22,4 +22,3 @@ action:
   parameters:
     run_id: "{{ trigger.run_id }}"
     run_path: "{{ trigger.path }}"
-    platform: "{{ trigger.platform }}"

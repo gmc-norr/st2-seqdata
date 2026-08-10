@@ -5,7 +5,6 @@ description: >
 input:
   - run_path
   - run_id
-  - platform
   - destination
 
 vars:
@@ -52,7 +51,7 @@ tasks:
         do: fail
       - when: <% succeeded() and result().result = null %>
         publish:
-          - err: "destination not defined for platform: <% ctx(platform) %>"
+          - err: "destination not defined for platform: KITM %>"
         do: fail
       - when: <% succeeded() and result().result != null %>
         publish:
