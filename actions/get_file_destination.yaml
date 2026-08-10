@@ -15,6 +15,7 @@ parameters:
     enum:
       - interop
       - run
+      - bam
   platform:
     type: string
     required: true
