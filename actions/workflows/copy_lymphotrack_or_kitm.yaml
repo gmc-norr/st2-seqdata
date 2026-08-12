@@ -1,0 +1,166 @@
+version: 1.0
+name: copy_lymphotrack_or_kitm
+description: >
+  If a BCLConvert run belongs to a lymphotrack or KITM sequencing run,
+  move files to a shared directory. Fastq files for lymphotrack, and the
+  full run for KITM
+
+input:
+  - analysis_id
+
+vars:
+  - err:
+  - msg:
+  - run_id:
+  - run_path:
+  - platform:
+
+tasks:
+  get_run_id:
+    action: cleve.get_analyses
+    input:
+      analysis_id: <% ctx().analysis_id %>
+    next:
+      - when: <% failed() %>
+        publish:
+          - msg: Cleve not reachable
+        do: fail
+      - when: <% succeeded() and result().result.body.metadata.count = 0 %>
+        publish:
+          - msg: analysis <% ctx().analysis_id %> not found in Cleve
+        do: fail
+      - when: <% succeeded() and result().result.body.metadata.count > 1 %>
+        publish:
+          - msg: more than one analysis with ID <% ctx().analysis_id %> found in Cleve
+        do: fail
+      - when: <% succeeded() and result().result.body.metadata.count = 1 %>
+        publish:
+          - run_id: <% result().result.body.analyses.first().runs.first() %>
+        do: get_run_description
+
+  get_run_description:
+    action: cleve.get_samplesheet
+    input:
+      run_id: <% ctx(run_id) %>
+      section: Header
+      key: RunDescription
+    next:
+      - when: "{{ succeeded() and 'lymphotrack' in result().get('result').get('body') | lower }}"
+        publish:
+          - filetype: fastq
+          - platform: lymphotrack
+        do: get_fastq_file
+      - when: "{{ succeeded() and 'kitm' in result().get('result').get('body') | lower }}"
+        do: get_run_path
+        publish:
+          - filetype: run
+          - platform: KITM
+      - when: "{{ succeeded() and 'lymphotrack' not in result().get('result').get('body') | lower and
+          'kitm' not in result().get('result').get('body') | lower }}"
+        publish:
+          - msg: "Not a KITM or lymphotrack run."
+        do: noop
+      - when: "{{ failed() and result().get('result').get('body').get('error') == 'key RunDescription not found in section Header' }}"
+        publish:
+          - msg: "No RunDescription in samplesheet"
+        do: noop
+      - when: "{{ failed() }}"
+        publish:
+          - err: "Failed to get samplesheet data from Cleve.
+              {{ result() | to_json_string }}"
+        do: fail
+
+  get_fastq_file:
+    action: cleve.get_analysis_files
+    input:
+      analysis_id: <% ctx(analysis_id) %>
+      type: fastq
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: <% result().result.body.error %>
+        do: fail
+      - when: <% succeeded() and result().result.body.len() = 0 %>
+        publish:
+          - err: "no fastq files found"
+        do: fail
+      - when: <% succeeded() and result().result.body.len() > 0 %>
+        publish:
+          - fastq_file: <% result().result.body.first().path %>
+        do: get_fastq_dir # assuming all fastq files are in the same dir
+
+  get_fastq_dir:
+    action: core.local
+    input:
+      cmd: "dirname {{ ctx().fastq_file }}"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: <% result().result.body.error %>
+        do: fail
+      - when: <% succeeded() %>
+        publish:
+          - source_dir: <% result().stdout %>/ # because we only want the contents
+        do: get_destination
+
+  get_run_path:
+    action: cleve.get_runs
+    input:
+      run_id: <% ctx(run_id) %>
+    next:
+      - when: "{{ succeeded() }}"
+        publish:
+          - source_dir: "{{ result().get('result').get('body').get('runs') | map(attribute='path') | first }}/"
+        do: get_destination
+      - when: "{{ failed() }}"
+        publish:
+          msg="Failed to get run path from Cleve.
+          {{ result() | to_json_string }}"
+
+  get_destination:
+    action: gmc_norr_seqdata.get_file_destination
+    input:
+      type: "{{ ctx().filetype }}"
+      platform: "{{ ctx().platform }}"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "failed to get destination from pack config"
+        do: fail
+      - when: <% succeeded() and result().result = null %>
+        publish:
+          - err: "destination not defined for platform: <% ctx().platform %>"
+        do: fail
+      - when: <% succeeded() and result().result != null %>
+        publish:
+          - destination: <% result().result %>/<% ctx(run_id) %>
+        do: create_destination
+
+  create_destination:
+    action: core.local
+    input:
+      cmd: "mkdir -p <% ctx(destination) %>"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "failed to create destination directory"
+        do: fail
+      - when: <% succeeded() %>
+        do: copy_dir
+
+  copy_dir:
+    action: core.local
+    input:
+      cmd: "rsync -a <% ctx(source_dir) %> <% ctx(destination) %>"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "rsync failed: <% result().stderr %>"
+        do: fail
+      - when: <% succeeded() %>
+        publish:
+          - msg: "Files synced to <% ctx(destination) %>"
+
+output:
+  - message: <% ctx(msg) %>
+  - error: <% ctx(err) %>
