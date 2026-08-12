@@ -1,0 +1,72 @@
+version: 1.0
+description: >
+  Copy bam from an analysis to a shared directory
+  that can be accessed by more people.
+
+input:
+  - bam_path
+  - run_id
+  - pipeline
+  - destination
+
+vars:
+  - err:
+  - msg:
+
+tasks:
+  check_destination:
+    action: core.noop
+    next:
+      - when: <% succeeded() and ctx(destination) = null %>
+        do: get_destination
+      - when: <% succeeded() and ctx(destination) != null %>
+        do: create_destination
+
+  get_destination:
+    action: gmc_norr_seqdata.get_file_destination
+    input:
+      type: bam
+      platform: <% ctx(pipeline) %>
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "failed to get destination from pack config"
+        do: fail
+      - when: <% succeeded() and result().result = null %>
+        publish:
+          - err: "destination not defined for platform: <% ctx(pipeline) %>"
+        do: fail
+      - when: <% succeeded() and result().result != null %>
+        publish:
+          - destination: <% result().result %>/<% ctx().run_id %>
+        do: create_destination
+
+  create_destination:
+    action: core.local
+    input:
+      cmd: "mkdir -p <% ctx(destination) %>"
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "failed to create destination directory"
+        do: fail
+      - when: <% succeeded() %>
+        do: copy_bam_folder
+
+  copy_bam_folder:
+    action: core.local
+    input:
+      cmd: "rsync -a <% ctx(bam_path) %> <% ctx(destination) %>"
+      timeout: 9000
+    next:
+      - when: <% failed() %>
+        publish:
+          - err: "rsync failed: <% result().stderr %>"
+        do: fail
+      - when: <% succeeded() %>
+        publish:
+          - msg: "data synced to <% ctx(destination) %> %>"
+
+output:
+  - message: <% ctx(msg) %>
+  - error: <% ctx(err) %>

@@ -40,9 +40,24 @@ run_destinations:
         type: string
         required: true
 
+bam_destinations:
+  description: >
+    Pipeline specific locations where bam files should be moved.
+  type: array
+  required: true
+  items:
+    type: object
+    properties:
+      platform:
+        type: string
+        required: true
+      path:
+        type: string
+        required: true
+
 fastq_destinations:
   description: >
-    Platform specific locations where fastq files should be moved.
+    Pipeline specific locations where fastq files should be moved.
   type: array
   required: true
   items:

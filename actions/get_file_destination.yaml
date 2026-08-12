@@ -16,6 +16,7 @@ parameters:
       - interop
       - run
       - fastq
+      - bam
   platform:
     type: string
     required: true
