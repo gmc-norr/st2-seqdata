@@ -2,8 +2,8 @@ version: 1.0
 name: copy_lymphotrack_or_kitm
 description: >
   If a BCLConvert run belongs to a lymphotrack or KITM sequencing run,
-  move files to a shared directory. Fastq files for lymphotrack, and the
-  full run for KITM
+  move files to a shared directory (fastq files for lymphotrack, the
+  full run for KITM).
 
 input:
   - analysis_id
@@ -13,6 +13,7 @@ vars:
   - msg:
   - run_id:
   - run_path:
+  - filetype:
   - platform:
 
 tasks:
