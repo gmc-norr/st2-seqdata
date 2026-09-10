@@ -15,6 +15,7 @@ parameters:
     enum:
       - interop
       - run
+      - fastq
       - bam
   platform:
     type: string
