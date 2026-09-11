@@ -5,7 +5,7 @@ enabled: true
 entry_point: workflows/copy_misc.yaml
 
 parameters:
-  misc_path:
+  file_path:
     type: string
     required: true
     description: Path to sequencing run
