@@ -5,8 +5,10 @@ description: >
 
 input:
   - file_path
+  - type
   - run_id
   - pipeline
+  - subdir
   - destination
 
 vars:
@@ -25,7 +27,7 @@ tasks:
   get_destination:
     action: gmc_norr_seqdata.get_file_destination
     input:
-      type: misc
+      type: <% ctx(type) %>
       platform: <% ctx(pipeline) %>
     next:
       - when: <% failed() %>
@@ -36,9 +38,17 @@ tasks:
         publish:
           - err: "destination not defined for platform: <% ctx(pipeline) %>"
         do: fail
-      - when: <% succeeded() and result().result != null %>
+      - when: <% succeeded() and result().result != null and ctx().run_id != null and ctx().subdir != null %>
+        publish:
+          - destination: <% result().result %>/ctx().subdir/<% ctx().run_id %>
+        do: create_destination
+      - when: <% succeeded() and result().result != null and ctx().run_id != null and ctx().subdir = null %>
         publish:
           - destination: <% result().result %>/<% ctx().run_id %>
+        do: create_destination
+      - when: <% succeeded() and result().result != null and ctx().run_id = null and ctx().subdir = null %>
+        publish:
+          - destination: <% result().result %> %>
         do: create_destination
 
   create_destination:
@@ -56,7 +66,7 @@ tasks:
   copy_file:
     action: core.local
     input:
-      cmd: "rsync -a <% ctx(file_path) %> <% ctx(destination) %>/"
+      cmd: "rsync -a <% ctx(file_path) %> <% ctx(destination) %> "
       timeout: 9000
     next:
       - when: <% failed() %>
