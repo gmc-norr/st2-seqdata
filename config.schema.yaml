@@ -54,3 +54,20 @@ bam_destinations:
       path:
         type: string
         required: true
+
+coverage_and_mutations_destinations:
+  description: >
+    Pipeline specific locations where coverage_and_mutations should be moved.
+  type: array
+  required: false
+  items:
+    type: object
+    properties:
+      platform:
+        type: string
+        required: true
+      path:
+        type: string
+        required: true
+
+
