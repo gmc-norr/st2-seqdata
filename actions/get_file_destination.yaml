@@ -16,6 +16,7 @@ parameters:
       - interop
       - run
       - bam
+      - file
   platform:
     type: string
     required: true
