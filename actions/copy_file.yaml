@@ -12,11 +12,11 @@ parameters:
   type:
     type: string
     required: true
-    description: typ of file
+    description: type of file
   run_id:
     type: string
     required: false
-    description: Run that genereted files is baseed on
+    description: Run that genereted files is based on
   pipeline:
     type: string
     required: true
