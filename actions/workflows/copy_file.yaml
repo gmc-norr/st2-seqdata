@@ -40,7 +40,7 @@ tasks:
         do: fail
       - when: <% succeeded() and result().result != null and ctx().run_id != null and ctx().subdir != null %>
         publish:
-          - destination: <% result().result %>/ctx().subdir/<% ctx().run_id %>
+          - destination: <% result().result %>/<% ctx().subdir %>/<% ctx().run_id %>
         do: create_destination
       - when: <% succeeded() and result().result != null and ctx().run_id != null and ctx().subdir = null %>
         publish:
@@ -48,7 +48,7 @@ tasks:
         do: create_destination
       - when: <% succeeded() and result().result != null and ctx().run_id = null and ctx().subdir = null %>
         publish:
-          - destination: <% result().result %> %>
+          - destination: <% result().result %>
         do: create_destination
 
   create_destination:
