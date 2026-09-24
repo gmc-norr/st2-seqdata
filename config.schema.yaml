@@ -55,9 +55,9 @@ bam_destinations:
         type: string
         required: true
 
-coverage_and_mutations_destinations:
+file_destinations:
   description: >
-    Pipeline specific locations where coverage_and_mutations should be moved.
+    Pipeline specific locations where file should be moved.
   type: array
   required: false
   items:
