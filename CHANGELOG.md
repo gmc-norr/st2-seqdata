@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/gmc-norr/st2-seqdata/compare/v1.0.0...v1.1.0) (2026-08-10)
+
+
+### Features
+
+* add `copy bam` workflow ([#88](https://github.com/gmc-norr/st2-seqdata/issues/88)) ([ef9f8f8](https://github.com/gmc-norr/st2-seqdata/commit/ef9f8f8360f0f8c09ecff90148b5c6903a7e1fd8))
+
+
+### Bug Fixes
+
+* add timout parameter to copy interop  ([#86](https://github.com/gmc-norr/st2-seqdata/issues/86)) ([51a2aab](https://github.com/gmc-norr/st2-seqdata/commit/51a2aab82c8be693a6280d5c78d2bbda7a51e1d3))
+
 ## [1.0.0](https://github.com/gmc-norr/st2-seqdata/compare/v0.4.1...v1.0.0) (2026-05-02)
 
 
