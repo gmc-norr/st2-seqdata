@@ -48,7 +48,7 @@ tasks:
     next:
       - when: "{{ succeeded() and 'lymphotrack' in result().get('result').get('body') | lower }}"
         publish:
-          - filetype: fastq
+          - filetype: file
           - platform: lymphotrack
         do: get_fastq_file
       - when: "{{ succeeded() and 'kitm' in result().get('result').get('body') | lower }}"
