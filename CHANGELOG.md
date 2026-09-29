@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/gmc-norr/st2-seqdata/compare/v1.1.0...v1.2.0) (2026-09-29)
+
+
+### Features
+
+* add general copy_file workflow ([#91](https://github.com/gmc-norr/st2-seqdata/issues/91)) ([c5b4ac7](https://github.com/gmc-norr/st2-seqdata/commit/c5b4ac7e922d5f1ab05276ee7a0ca7f7b3420db0))
+
 ## [1.1.0](https://github.com/gmc-norr/st2-seqdata/compare/v1.0.0...v1.1.0) (2026-08-10)
 
 
