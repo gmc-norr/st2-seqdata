@@ -102,7 +102,7 @@ tasks:
       - when: <% succeeded() %>
         publish:
           - source_dir: <% result().stdout %>/ # because we only want the contents
-        do: get_destination
+        do: copy_file_workflow
 
   get_run_path:
     action: cleve.get_runs
@@ -112,56 +112,24 @@ tasks:
       - when: "{{ succeeded() }}"
         publish:
           - source_dir: "{{ result().get('result').get('body').get('runs') | map(attribute='path') | first }}/"
-        do: get_destination
+        do: copy_file_workflow
       - when: "{{ failed() }}"
         publish:
-          msg="Failed to get run path from Cleve.
+          err="Failed to get run path from Cleve.
           {{ result() | to_json_string }}"
 
-  get_destination:
-    action: gmc_norr_seqdata.get_file_destination
+  copy_file_workflow:
+    action: gmc_norr_seqdata.copy_file
     input:
       type: "{{ ctx().filetype }}"
-      platform: "{{ ctx().platform }}"
+      pipeline: "{{ ctx().platform }}"
+      run_id: "{{ ctx().run_id }}"
+      file_path: "{{ ctx().source_dir }}"
     next:
-      - when: <% failed() %>
+      - when: "{{ failed() }}"
         publish:
-          - err: "failed to get destination from pack config"
-        do: fail
-      - when: <% succeeded() and result().result = null %>
-        publish:
-          - err: "destination not defined for platform: <% ctx().platform %>"
-        do: fail
-      - when: <% succeeded() and result().result != null %>
-        publish:
-          - destination: <% result().result %>/<% ctx(run_id) %>
-        do: create_destination
-
-  create_destination:
-    action: core.local
-    input:
-      cmd: "mkdir -p <% ctx(destination) %>"
-    next:
-      - when: <% failed() %>
-        publish:
-          - err: "failed to create destination directory"
-        do: fail
-      - when: <% succeeded() %>
-        do: copy_dir
-
-  copy_dir:
-    action: core.local
-    input:
-      cmd: "rsync -a <% ctx(source_dir) %> <% ctx(destination) %>"
-    next:
-      - when: <% failed() %>
-        publish:
-          - err: "rsync failed: <% result().stderr %>"
-        do: fail
-      - when: <% succeeded() %>
-        publish:
-          - msg: "Files synced to <% ctx(destination) %>"
-
+          err="Failed to copy dir.
+          {{ result() | to_json_string }}"
 output:
   - message: <% ctx(msg) %>
   - error: <% ctx(err) %>
