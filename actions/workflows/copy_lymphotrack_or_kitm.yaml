@@ -132,7 +132,7 @@ tasks:
           {{ result() | to_json_string }}"
       - when: "{{ succeeded() }}"
         publish:
-          msg="Successfully moved {{ ctx().filetype }} files
+          msg="Successfully moved files
           from {{ ctx().source_dir }}"
 output:
   - message: <% ctx(msg) %>
