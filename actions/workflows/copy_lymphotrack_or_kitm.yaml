@@ -101,7 +101,7 @@ tasks:
         do: fail
       - when: <% succeeded() %>
         publish:
-          - source_dir: <% result().stdout %>/ # because we only want the contents
+          - source_dir: <% result().stdout %>/*.fastq.gz
         do: copy_file_workflow
 
   get_run_path:
@@ -130,6 +130,10 @@ tasks:
         publish:
           err="Failed to copy dir.
           {{ result() | to_json_string }}"
+      - when: "{{ succeeded() }}"
+        publish:
+          msg="Successfully moved {{ ctx().type }} files
+          from {{ ctx().source_dir }}"
 output:
   - message: <% ctx(msg) %>
   - error: <% ctx(err) %>
