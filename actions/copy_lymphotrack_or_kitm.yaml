@@ -1,0 +1,12 @@
+name: copy_lymphotrack_or_kitm
+runner_type: orquesta
+description: If a BCLConvert run belongs to a lymphotrack or KITM sequencing run,
+  move files to a shared directory.
+enabled: true
+entry_point: workflows/copy_lymphotrack_or_kitm.yaml
+
+parameters:
+  analysis_id:
+    type: string
+    required: true
+    description: ID of the analysis
