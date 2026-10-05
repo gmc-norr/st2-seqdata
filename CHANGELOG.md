@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.0](https://github.com/gmc-norr/st2-seqdata/compare/v1.2.0...v2.0.0) (2026-10-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove bam action and config ([#93](https://github.com/gmc-norr/st2-seqdata/issues/93))
+
+### Features
+
+* add copy lymphotrack or KITM action and rule ([#89](https://github.com/gmc-norr/st2-seqdata/issues/89)) ([d6adc52](https://github.com/gmc-norr/st2-seqdata/commit/d6adc52452a8e5238b061888b775dc81397bc985))
+* remove bam action and config ([#93](https://github.com/gmc-norr/st2-seqdata/issues/93)) ([a81d001](https://github.com/gmc-norr/st2-seqdata/commit/a81d001f6f2bf39a324dd5bd74b6616ba331e062))
+
 ## [1.2.0](https://github.com/gmc-norr/st2-seqdata/compare/v1.1.0...v1.2.0) (2026-09-29)
 
 
